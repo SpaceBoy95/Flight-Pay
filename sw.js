@@ -1,19 +1,24 @@
-const CACHE = 'flightpay-v3';
+const CACHE = 'flightpay-v4';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './vendor/pdf.min.mjs',
-  './vendor/pdf.worker.min.mjs'
+  './icon-192.png',
+  './icon-512.png',
+  './pdf.min.mjs',
+  './pdf.worker.min.mjs'
 ];
 
 self.addEventListener('install', (event) => {
+  // cache each asset independently - addAll() is all-or-nothing, so one missing/renamed
+  // file (e.g. after a GitHub upload that flattens folders) would otherwise fail the
+  // whole install and leave everyone stuck on the previous cached version forever
   event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then((cache) =>
+      Promise.allSettled(ASSETS.map((url) => cache.add(url).catch((err) => console.warn('sw: could not cache', url, err))))
+    ).then(() => self.skipWaiting())
   );
 });
 

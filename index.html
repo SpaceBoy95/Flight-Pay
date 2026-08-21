@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#0B1220">
 <title>Flight Pay Log</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="style.css">
@@ -272,8 +272,8 @@
 </div>
 
 <script type="module">
-  import * as pdfjsLib from './vendor/pdf.min.mjs';
-  pdfjsLib.GlobalWorkerOptions.workerSrc = './vendor/pdf.worker.min.mjs';
+  import * as pdfjsLib from './pdf.min.mjs';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.min.mjs';
   window.__pdfjsLib = pdfjsLib;
 </script>
 <script src="app.js"></script>
