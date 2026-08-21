@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0B1220">
+<title>Flight Pay Log</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="brand">Flight Pay Log</div>
+    <h1 id="topbarTitle">Log entry</h1>
+  </div>
+  <div class="month-pill" id="offlinePill">●&nbsp;offline-ready</div>
+</div>
+
+<main>
+
+  <!-- LOG VIEW -->
+  <section class="view active" id="view-log">
+    <div class="card">
+      <h2><span class="dot"></span>New entry</h2>
+
+      <label for="entryType">Entry type</label>
+      <div class="segmented" id="entryTypeSeg">
+        <button data-val="sector" class="active">Sector</button>
+        <button data-val="standby">Standby</button>
+        <button data-val="other">Other pay</button>
+      </div>
+
+      <div id="sectorFields">
+        <label for="entryDate">Date</label>
+        <input type="date" id="entryDate">
+
+        <div class="row">
+          <div>
+            <label for="entryOrigin">From</label>
+            <input type="text" id="entryOrigin" placeholder="MAN" maxlength="4" style="text-transform:uppercase">
+          </div>
+          <div>
+            <label for="entryDest">To</label>
+            <input type="text" id="entryDest" placeholder="CDG" maxlength="4" style="text-transform:uppercase">
+          </div>
+        </div>
+
+        <label for="entryCategorySelect">Sector length</label>
+        <select id="entryCategorySelect">
+          <option value="">Select or type route above</option>
+          <option value="nominal">Nominal (£21.56)</option>
+          <option value="short">Short (£17.25)</option>
+          <option value="medium">Medium (£25.87)</option>
+          <option value="long">Long (£32.34)</option>
+          <option value="extraLong">Extra Long (£53.90)</option>
+          <option value="ultraLong">Ultra Long (£64.68)</option>
+        </select>
+        <div class="helptext" id="routeMemoryNote"></div>
+
+        <div class="check-row">
+          <span>Returned to stand / diverted to base</span>
+          <label class="switch">
+            <input type="checkbox" id="entryReturnToStand">
+            <span class="track"></span><span class="thumb"></span>
+          </label>
+        </div>
+        <div class="helptext">Forces Nominal rate regardless of route.</div>
+
+        <label for="entryBar">Bar takings this sector (£)</label>
+        <input type="number" id="entryBar" inputmode="decimal" placeholder="0.00" step="0.01">
+
+        <label for="entryCrew">Crew operating</label>
+        <input type="number" id="entryCrew" inputmode="numeric" placeholder="4" min="1">
+      </div>
+
+      <div id="standbyFields" style="display:none;">
+        <label for="standbyDate">Date</label>
+        <input type="date" id="standbyDate">
+        <label for="standbyMinutes">Standby length (minutes)</label>
+        <input type="number" id="standbyMinutes" inputmode="numeric" placeholder="420">
+        <label for="standbyPay">Standby pay (£) - from roster/payslip</label>
+        <input type="number" id="standbyPay" inputmode="decimal" step="0.01" placeholder="0.00">
+      </div>
+
+      <div id="otherFields" style="display:none;">
+        <label for="otherDate">Date</label>
+        <input type="date" id="otherDate">
+        <label for="otherDesc">Description</label>
+        <input type="text" id="otherDesc" placeholder="e.g. Leave Pay">
+        <label for="otherPay">Amount (£)</label>
+        <input type="number" id="otherPay" inputmode="decimal" step="0.01" placeholder="0.00">
+      </div>
+
+      <div class="check-row">
+        <span>Day off disruption</span>
+      </div>
+      <div class="segmented" id="dayOffSeg">
+        <button data-val="none" class="active">None</button>
+        <button data-val="ddo">DDO &lt;90min</button>
+        <button data-val="ido">IDO 90min+</button>
+      </div>
+
+      <label for="entryDelay">Delay (minutes)</label>
+      <input type="number" id="entryDelay" inputmode="numeric" placeholder="0">
+      <div class="helptext">Every delay is logged, even unpaid ones under 60 minutes, for union evidence.</div>
+
+      <div class="check-row">
+        <span>Willing to fly</span>
+        <label class="switch">
+          <input type="checkbox" id="entryWillingToFly">
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+
+      <label for="entryNotes">Notes (optional)</label>
+      <textarea id="entryNotes" rows="2" placeholder="Anything worth remembering about this one"></textarea>
+
+      <div class="computed-strip" id="computedStrip"></div>
+
+      <button class="primary" id="saveEntryBtn">Save entry</button>
+    </div>
+  </section>
+
+  <!-- ENTRIES VIEW -->
+  <section class="view" id="view-entries">
+    <div class="card">
+      <h2><span class="dot"></span>This month <span id="entriesMonthLabel" style="margin-left:auto;font-family:var(--mono);font-weight:400;text-transform:none;letter-spacing:0;"></span></h2>
+      <div class="row" style="margin-bottom:10px;">
+        <button class="ghost" id="prevMonthBtn">‹ Prev</button>
+        <button class="ghost" id="nextMonthBtn">Next ›</button>
+      </div>
+      <div id="entriesList"></div>
+    </div>
+  </section>
+
+  <!-- DELAYS VIEW -->
+  <section class="view" id="view-delays">
+    <div class="card">
+      <h2><span class="dot"></span>Delay evidence log</h2>
+      <div class="banner">Every delay you've logged, paid or not. Use this when the union next raises disruption pay thresholds.</div>
+      <div class="stat-grid" style="margin-bottom:12px;">
+        <div class="stat-box">
+          <div class="label">Unpaid delays</div>
+          <div class="value" id="unpaidDelayCount">0</div>
+          <div class="sub" id="unpaidDelayMinutes">0 min total</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Paid delays</div>
+          <div class="value" id="paidDelayCount">0</div>
+          <div class="sub" id="paidDelayTotal">£0.00 total</div>
+        </div>
+      </div>
+      <div id="delaysList"></div>
+    </div>
+  </section>
+
+  <!-- PAYSLIP VIEW -->
+  <section class="view" id="view-payslip">
+    <div class="card">
+      <h2><span class="dot"></span>Cross-check payslip</h2>
+      <div class="helptext" style="margin-bottom:10px;">Enter the category totals shown on your CVP supplementary payslip for the month you're checking. This compares them against what the app calculated from your logged entries.</div>
+
+      <label for="payslipMonth">Payslip covers month</label>
+      <input type="month" id="payslipMonth">
+
+      <label for="pSectorPay">Sector Pay total (£)</label>
+      <input type="number" id="pSectorPay" step="0.01" inputmode="decimal">
+
+      <label for="pCommission">Commission total (£)</label>
+      <input type="number" id="pCommission" step="0.01" inputmode="decimal">
+
+      <label for="pDelay">Disruption / Delay pay total (£)</label>
+      <input type="number" id="pDelay" step="0.01" inputmode="decimal">
+
+      <label for="pDayOff">Disrupted/Infringed Day Off Pay total (£)</label>
+      <input type="number" id="pDayOff" step="0.01" inputmode="decimal">
+
+      <label for="pStandby">Airport Standby Pay total (£)</label>
+      <input type="number" id="pStandby" step="0.01" inputmode="decimal">
+
+      <button class="primary" id="compareBtn">Compare against my log</button>
+
+      <div id="compareResults" style="margin-top:16px;"></div>
+    </div>
+  </section>
+
+  <!-- STATS VIEW -->
+  <section class="view" id="view-stats">
+    <div class="card">
+      <h2><span class="dot"></span>All-time stats</h2>
+      <div class="stat-grid" id="statsGrid"></div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>Top routes</h2>
+      <div id="topRoutes"></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS VIEW -->
+  <section class="view" id="view-settings">
+    <div class="card">
+      <h2><span class="dot"></span>Sector pay rates (£, per direction)</h2>
+      <label for="rateNominal">Nominal</label>
+      <input type="number" id="rateNominal" step="0.01">
+      <label for="rateShort">Short</label>
+      <input type="number" id="rateShort" step="0.01">
+      <label for="rateMedium">Medium</label>
+      <input type="number" id="rateMedium" step="0.01">
+      <label for="rateLong">Long</label>
+      <input type="number" id="rateLong" step="0.01">
+      <label for="rateExtraLong">Extra Long</label>
+      <input type="number" id="rateExtraLong" step="0.01">
+      <label for="rateUltraLong">Ultra Long</label>
+      <input type="number" id="rateUltraLong" step="0.01">
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Commission &amp; delay</h2>
+      <label for="commissionPercent">Commission % of bar takings</label>
+      <input type="number" id="commissionPercent" step="0.1">
+
+      <label for="delayTier1">Paid at 1 hour+ (£)</label>
+      <input type="number" id="delayTier1" step="0.01">
+      <label for="delayTier2">Paid at 2 hours+ (£)</label>
+      <input type="number" id="delayTier2" step="0.01">
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Day off disruption</h2>
+      <label for="ddoAmount">DDO amount (£) - under 90 min</label>
+      <input type="number" id="ddoAmount" step="0.01">
+      <label for="idoAmount">IDO amount (£) - 90 min or more</label>
+      <input type="number" id="idoAmount" step="0.01" placeholder="Not confirmed yet">
+      <div class="helptext" id="idoWarning"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Manual claim rules</h2>
+      <div class="helptext" style="margin-bottom:8px;">Disruption pay is usually automatic, but some scenarios need a manual claim. Note your own rules here so the app can remind you - fill this in from your ops manual or ask your union rep.</div>
+      <textarea id="manualClaimRules" rows="4" placeholder="e.g. Cancellations always require a manual claim via..."></textarea>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Known routes</h2>
+      <div id="routeManagerList"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Data</h2>
+      <button class="ghost" id="exportBtn">Export all data (JSON backup)</button>
+      <button class="ghost" id="importBtn">Import backup</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none;">
+      <button class="ghost" id="wipeBtn" style="color:var(--red); border-color:#5a2e2e;">Erase all data</button>
+    </div>
+
+    <button class="primary" id="saveSettingsBtn">Save settings</button>
+  </section>
+
+</main>
+
+<div class="navbar">
+  <button data-view="log" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20M4 6l16 12M20 6L4 18"/></svg>
+    Log
+  </button>
+  <button data-view="entries">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 2v4M17 2v4M3 10h18"/></svg>
+    Entries
+  </button>
+  <button data-view="delays">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+    Delays
+  </button>
+  <button data-view="payslip">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l3 3v17H6z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>
+    Payslip
+  </button>
+  <button data-view="stats">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+    Stats
+  </button>
+  <button data-view="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 01-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 010-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 014 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 010 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+    Settings
+  </button>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
