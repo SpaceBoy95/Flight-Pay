@@ -16,13 +16,26 @@ const DEFAULT_DEAL = {
   idoAmount: null
 };
 
-const SEED_ROUTES = {"MAN-BES": "short", "MAN-BFS": "short", "MAN-BHD": "short", "MAN-BRU": "short", "MAN-CRL": "short", "MAN-DUS": "short", "MAN-EDI": "short", "MAN-GVA": "short", "MAN-INV": "short", "MAN-JER": "short", "MAN-LGW": "short", "MAN-LUX": "short", "MAN-NQY": "short", "MAN-NTE": "short", "MAN-ORY": "short", "MAN-RNS": "short", "MAN-AEY": "medium", "MAN-AJA": "medium", "MAN-ALC": "medium", "MAN-ARN": "medium", "MAN-BER": "medium", "MAN-BGO": "medium", "MAN-BGY": "medium", "MAN-BIA": "medium", "MAN-BLQ": "medium", "MAN-BSL": "medium", "MAN-BUD": "medium", "MAN-CAG": "medium", "MAN-CPH": "medium", "MAN-FAE": "medium", "MAN-FCO": "medium", "MAN-FRA": "medium", "MAN-GNB": "medium", "MAN-GOA": "medium", "MAN-GOT": "medium", "MAN-GRO": "medium", "MAN-GRX": "medium", "MAN-HAM": "medium", "MAN-HEL": "medium", "MAN-IBZ": "medium", "MAN-INN": "medium", "MAN-KEF": "medium", "MAN-KRK": "medium", "MAN-KSC": "medium", "MAN-LEI": "medium", "MAN-LIN": "medium", "MAN-LRH": "medium", "MAN-LWO": "medium", "MAN-LYS": "medium", "MAN-MAD": "medium", "MAN-MAH": "medium", "MAN-MRS": "medium", "MAN-MUC": "medium", "MAN-MXP": "medium", "MAN-NCE": "medium", "MAN-NUE": "medium", "MAN-OLB": "medium", "MAN-OSL": "medium", "MAN-POZ": "medium", "MAN-PRG": "medium", "MAN-PSA": "medium", "MAN-PUJ": "medium", "MAN-REU": "medium", "MAN-RIX": "medium", "MAN-RMU": "medium", "MAN-RZE": "medium", "MAN-SCR": "medium", "MAN-SPU": "medium", "MAN-SVG": "medium", "MAN-TLL": "medium", "MAN-TLS": "medium", "MAN-TRN": "medium", "MAN-TRS": "medium", "MAN-VCE": "medium", "MAN-VIE": "medium", "MAN-VLC": "medium", "MAN-VNO": "medium", "MAN-VRN": "medium", "MAN-WAW": "medium", "MAN-WRO": "medium", "MAN-ZAD": "medium", "MAN-ZAG": "medium", "MAN-ZRH": "medium", "MAN-AGA": "long", "MAN-AGP": "long", "MAN-ATH": "long", "MAN-BEG": "long", "MAN-BOJ": "long", "MAN-BRI": "long", "MAN-CFU": "long", "MAN-CLJ": "long", "MAN-CMN": "long", "MAN-CTA": "long", "MAN-DJE": "long", "MAN-EFL": "long", "MAN-ENF": "long", "MAN-FAO": "long", "MAN-FNC": "long", "MAN-GIB": "long", "MAN-IST": "long", "MAN-IVL": "long", "MAN-JMK": "long", "MAN-JSI": "long", "MAN-KBP": "long", "MAN-KLX": "long", "MAN-KRN": "long", "MAN-KVA": "long", "MAN-MJT": "long", "MAN-MLA": "long", "MAN-NAP": "long", "MAN-NBE": "long", "MAN-OHD": "long", "MAN-OTP": "long", "MAN-OUD": "long", "MAN-PDL": "long", "MAN-PRN": "long", "MAN-PVK": "long", "MAN-RAK": "long", "MAN-RBA": "long", "MAN-RVN": "long", "MAN-SKG": "long", "MAN-SOF": "long", "MAN-TIA": "long", "MAN-TOS": "long", "MAN-VAR": "long", "MAN-ACE": "extraLong", "MAN-ADB": "extraLong", "MAN-CHQ": "extraLong", "MAN-DLM": "extraLong", "MAN-ESB": "extraLong", "MAN-LPA": "extraLong", "MAN-SPC": "extraLong", "MAN-TFS": "extraLong", "MAN-AQJ": "ultraLong", "MAN-ASM": "ultraLong", "MAN-BEY": "ultraLong", "MAN-BVC": "ultraLong", "MAN-EVN": "ultraLong", "MAN-GYD": "ultraLong", "MAN-HRG": "ultraLong", "MAN-LCA": "ultraLong", "MAN-LXR": "ultraLong", "MAN-PFO": "ultraLong", "MAN-SPX": "ultraLong", "MAN-TBS": "ultraLong", "MAN-TLV": "ultraLong", "MAN-VXE": "ultraLong"};
+const SEED_ROUTES = {"MAN-BES": "short", "MAN-BFS": "short", "MAN-BHD": "short", "MAN-BRU": "short", "MAN-CRL": "short", "MAN-DUS": "short", "MAN-EDI": "short", "MAN-GVA": "short", "MAN-INV": "short", "MAN-JER": "short", "MAN-LGW": "short", "MAN-LUX": "short", "MAN-NQY": "short", "MAN-NTE": "short", "MAN-ORY": "short", "MAN-RNS": "short", "MAN-ABZ": "short", "MAN-IOM": "short", "MAN-LDY": "short", "MAN-ORK": "short", "MAN-SNN": "short", "MAN-DUB": "short", "MAN-CDG": "short", "MAN-AMS": "short", "MAN-CGN": "short", "MAN-BOD": "medium", "MAN-OPO": "medium", "MAN-LCG": "medium", "MAN-BIO": "medium", "MAN-PMI": "medium", "MAN-GDN": "medium", "MAN-SZG": "medium", "MAN-LJU": "medium", "MAN-LIS": "medium", "MAN-JTR": "long", "MAN-PMO": "long", "MAN-TPS": "long", "MAN-RHO": "extraLong", "MAN-KGS": "extraLong", "MAN-BJV": "extraLong", "MAN-AYT": "extraLong", "MAN-AEY": "medium", "MAN-AJA": "medium", "MAN-ALC": "medium", "MAN-ARN": "medium", "MAN-BER": "medium", "MAN-BGO": "medium", "MAN-BGY": "medium", "MAN-BIA": "medium", "MAN-BLQ": "medium", "MAN-BSL": "medium", "MAN-BUD": "medium", "MAN-CAG": "medium", "MAN-CPH": "medium", "MAN-FAE": "medium", "MAN-FCO": "medium", "MAN-FRA": "medium", "MAN-GNB": "medium", "MAN-GOA": "medium", "MAN-GOT": "medium", "MAN-GRO": "medium", "MAN-GRX": "medium", "MAN-HAM": "medium", "MAN-HEL": "medium", "MAN-IBZ": "medium", "MAN-INN": "medium", "MAN-KEF": "medium", "MAN-KRK": "medium", "MAN-KSC": "medium", "MAN-LEI": "medium", "MAN-LIN": "medium", "MAN-LRH": "medium", "MAN-LWO": "medium", "MAN-LYS": "medium", "MAN-MAD": "medium", "MAN-MAH": "medium", "MAN-MRS": "medium", "MAN-MUC": "medium", "MAN-MXP": "medium", "MAN-NCE": "medium", "MAN-NUE": "medium", "MAN-OLB": "medium", "MAN-OSL": "medium", "MAN-POZ": "medium", "MAN-PRG": "medium", "MAN-PSA": "medium", "MAN-PUJ": "medium", "MAN-REU": "medium", "MAN-RIX": "medium", "MAN-RMU": "medium", "MAN-RZE": "medium", "MAN-SCR": "medium", "MAN-SPU": "medium", "MAN-SVG": "medium", "MAN-TLL": "medium", "MAN-TLS": "medium", "MAN-TRN": "medium", "MAN-TRS": "medium", "MAN-VCE": "medium", "MAN-VIE": "medium", "MAN-VLC": "medium", "MAN-VNO": "medium", "MAN-VRN": "medium", "MAN-WAW": "medium", "MAN-WRO": "medium", "MAN-ZAD": "medium", "MAN-ZAG": "medium", "MAN-ZRH": "medium", "MAN-AGA": "long", "MAN-AGP": "long", "MAN-ATH": "long", "MAN-BEG": "long", "MAN-BOJ": "long", "MAN-BRI": "long", "MAN-CFU": "long", "MAN-CLJ": "long", "MAN-CMN": "long", "MAN-CTA": "long", "MAN-DJE": "long", "MAN-EFL": "long", "MAN-ENF": "long", "MAN-FAO": "long", "MAN-FNC": "long", "MAN-GIB": "long", "MAN-IST": "long", "MAN-IVL": "long", "MAN-JMK": "long", "MAN-JSI": "long", "MAN-KBP": "long", "MAN-KLX": "long", "MAN-KRN": "long", "MAN-KVA": "long", "MAN-MJT": "long", "MAN-MLA": "long", "MAN-NAP": "long", "MAN-NBE": "long", "MAN-OHD": "long", "MAN-OTP": "long", "MAN-OUD": "long", "MAN-PDL": "long", "MAN-PRN": "long", "MAN-PVK": "long", "MAN-RAK": "long", "MAN-RBA": "long", "MAN-RVN": "long", "MAN-SKG": "long", "MAN-SOF": "long", "MAN-TIA": "long", "MAN-TOS": "long", "MAN-VAR": "long", "MAN-ACE": "extraLong", "MAN-ADB": "extraLong", "MAN-CHQ": "extraLong", "MAN-DLM": "extraLong", "MAN-ESB": "extraLong", "MAN-LPA": "extraLong", "MAN-SPC": "extraLong", "MAN-TFS": "extraLong", "MAN-AQJ": "ultraLong", "MAN-ASM": "ultraLong", "MAN-BEY": "ultraLong", "MAN-BVC": "ultraLong", "MAN-EVN": "ultraLong", "MAN-GYD": "ultraLong", "MAN-HRG": "ultraLong", "MAN-LCA": "ultraLong", "MAN-LXR": "ultraLong", "MAN-PFO": "ultraLong", "MAN-SPX": "ultraLong", "MAN-TBS": "ultraLong", "MAN-TLV": "ultraLong", "MAN-VXE": "ultraLong"};
+
+// seed keys are written as "MAN-XXX" but lookups use routeKey() which sorts alphabetically,
+// so "MAN-AEY" (A before M) would never match a lookup for "AEY-MAN" - renormalize once here
+function normalizeRouteMap(map) {
+  const out = {};
+  for (const [k, v] of Object.entries(map)) {
+    const [a, b] = k.split('-');
+    if (a && b) out[routeKey(a, b)] = v;
+  }
+  return out;
+}
+
+const NORMALIZED_SEED_ROUTES = normalizeRouteMap(SEED_ROUTES);
 
 function defaultSettings() {
   return {
     payDeals: [structuredClone(DEFAULT_DEAL)],
     manualClaimRules: '',
-    routeCategories: structuredClone(SEED_ROUTES)
+    routeCategories: structuredClone(NORMALIZED_SEED_ROUTES)
   };
 }
 
@@ -32,7 +45,8 @@ function loadSettings() {
     try {
       const parsed = JSON.parse(raw);
       if (!parsed.payDeals || !parsed.payDeals.length) parsed.payDeals = [structuredClone(DEFAULT_DEAL)];
-      if (!parsed.routeCategories) parsed.routeCategories = structuredClone(SEED_ROUTES);
+      // re-key any previously-saved routes (some installs may predate the routeKey fix) and backfill new seed routes
+      parsed.routeCategories = Object.assign(structuredClone(NORMALIZED_SEED_ROUTES), normalizeRouteMap(parsed.routeCategories || {}));
       if (typeof parsed.manualClaimRules !== 'string') parsed.manualClaimRules = '';
       return parsed;
     } catch (e) { /* fall through */ }
@@ -52,7 +66,7 @@ function loadSettings() {
       return {
         payDeals: [deal],
         manualClaimRules: old.manualClaimRules || '',
-        routeCategories: Object.assign(structuredClone(SEED_ROUTES), old.routeCategories || {})
+        routeCategories: Object.assign(structuredClone(NORMALIZED_SEED_ROUTES), normalizeRouteMap(old.routeCategories || {}))
       };
     } catch (e) { /* fall through */ }
   }
@@ -90,6 +104,13 @@ function dealFor(dateStr) {
 // ---------- Helpers ----------
 function routeKey(a, b) {
   return [a.trim().toUpperCase(), b.trim().toUpperCase()].sort().join('-');
+}
+
+// for display only - always shows MAN first since every logged route starts/ends at base
+function displayRoute(key) {
+  const parts = key.split('-');
+  if (parts.length === 2 && parts.includes('MAN')) return ['MAN', parts.find(p => p !== 'MAN')].join('-');
+  return key;
 }
 
 function fmtGBP(n) {
@@ -242,6 +263,8 @@ function sectorBlockTemplate(i) {
       <label class="switch"><input type="checkbox" class="sb-diverted"><span class="track"></span><span class="thumb"></span></label>
     </div>
     <div class="sb-manual-pay-wrap" style="display:none;">
+      <label>Diverted to (airport)</label>
+      <input type="text" class="sb-diverted-to" placeholder="e.g. BRS" maxlength="4" style="text-transform:uppercase">
       <label>Sector pay for this diversion (£) - work out manually</label>
       <input type="number" class="sb-manual-pay" step="0.01" placeholder="0.00">
     </div>
@@ -254,7 +277,50 @@ function sectorBlockTemplate(i) {
   </div>`;
 }
 
-function renderSectorBlocks() {
+function captureSectorBlockValues() {
+  return [...document.querySelectorAll('#sectorBlocksContainer .sector-block')].map(block => ({
+    origin: block.querySelector('.sb-origin').value,
+    dest: block.querySelector('.sb-dest').value,
+    category: block.querySelector('.sb-category').value,
+    returnToStand: block.querySelector('.sb-return').checked,
+    diverted: block.querySelector('.sb-diverted').checked,
+    divertedTo: block.querySelector('.sb-diverted-to')?.value || '',
+    manualPay: block.querySelector('.sb-manual-pay')?.value || '',
+    barTakings: block.querySelector('.sb-bar').value,
+    crewCount: block.querySelector('.sb-crew').value
+  }));
+}
+
+function applySectorBlockValues(values) {
+  [...document.querySelectorAll('#sectorBlocksContainer .sector-block')].forEach((block, i) => {
+    const v = values[i];
+    if (!v) return;
+    block.querySelector('.sb-origin').value = v.origin || '';
+    block.querySelector('.sb-dest').value = v.dest || '';
+    block.querySelector('.sb-category').value = v.category || '';
+    block.querySelector('.sb-return').checked = v.returnToStand;
+    block.querySelector('.sb-diverted').checked = v.diverted;
+    const manualWrap = block.querySelector('.sb-manual-pay-wrap');
+    manualWrap.style.display = v.diverted ? 'block' : 'none';
+    const divertedToInput = block.querySelector('.sb-diverted-to');
+    if (divertedToInput) divertedToInput.value = v.divertedTo || '';
+    const manualPayInput = block.querySelector('.sb-manual-pay');
+    if (manualPayInput) manualPayInput.value = v.manualPay || '';
+    block.querySelector('.sb-bar').value = v.barTakings || '';
+    block.querySelector('.sb-crew').value = v.crewCount || '';
+
+    const note = block.querySelector('.sb-route-note');
+    const o = (v.origin || '').trim().toUpperCase();
+    const d = (v.dest || '').trim().toUpperCase();
+    if (o.length >= 3 && d.length >= 3) {
+      const known = settings.routeCategories[routeKey(o, d)];
+      note.textContent = known ? `Remembered: ${o}-${d} is ${categoryLabel(known)}.` : 'New route — pick the sector length and it will be remembered.';
+    }
+  });
+}
+
+function renderSectorBlocks(preserveExisting = true) {
+  const preservedValues = preserveExisting ? captureSectorBlockValues() : [];
   const container = document.getElementById('sectorBlocksContainer');
   let html = '';
   for (let i = 0; i < sectorCount; i++) html += sectorBlockTemplate(i);
@@ -290,7 +356,9 @@ function renderSectorBlocks() {
       updateComputedStrip();
     });
     block.querySelector('.sb-manual-pay')?.addEventListener('input', updateComputedStrip);
+    block.querySelector('.sb-diverted-to')?.addEventListener('input', updateComputedStrip);
   });
+  if (preservedValues.length) applySectorBlockValues(preservedValues);
   updateComputedStrip();
 }
 
@@ -307,6 +375,7 @@ function readSectorBlocks() {
     returnToStand: block.querySelector('.sb-return').checked,
     diverted: block.querySelector('.sb-diverted').checked,
     manualPay: block.querySelector('.sb-manual-pay')?.value || 0,
+    divertedTo: (block.querySelector('.sb-diverted-to')?.value || '').trim().toUpperCase(),
     barTakings: block.querySelector('.sb-bar').value,
     crewCount: block.querySelector('.sb-crew').value
   }));
@@ -323,7 +392,7 @@ function buildDraftEntries() {
     return blocks.map((b, i) => ({
       type: 'sector',
       date, origin: b.origin, dest: b.dest, category: b.category,
-      returnToStand: b.returnToStand, diverted: b.diverted, manualPay: b.manualPay,
+      returnToStand: b.returnToStand, diverted: b.diverted, manualPay: b.manualPay, divertedTo: b.divertedTo,
       barTakings: b.barTakings, crewCount: b.crewCount,
       // delay / day-off apply once per duty, only attached to the first sector to avoid double-counting
       dayOffType: i === 0 ? currentDayOff : 'none',
@@ -357,7 +426,7 @@ function updateComputedStrip() {
     const pay = computeEntryPay(draft);
     grandTotal += pay.total;
     if (draft.type === 'sector') {
-      const label = draft.diverted ? 'Diverted — manual' : (draft.returnToStand ? 'Nominal — return to stand' : (categoryLabel(draft.category) || '—'));
+      const label = draft.diverted ? `Diverted${draft.divertedTo ? ' to ' + draft.divertedTo : ''} — manual` : (draft.returnToStand ? 'Nominal — return to stand' : (categoryLabel(draft.category) || '—'));
       lines += `<div class="line"><span>Sector ${i + 1} pay (${label})</span><span>${fmtGBP(pay.sectorPay)}</span></div>`;
       lines += `<div class="line"><span>Sector ${i + 1} commission</span><span>${fmtGBP(pay.commission)}</span></div>`;
     } else if (draft.type === 'standby') {
@@ -401,10 +470,10 @@ document.getElementById('saveEntryBtn').addEventListener('click', () => {
   entries.push(...drafts);
   saveEntries(entries);
 
-  // reset form
+  // reset form (clean wipe - don't carry the just-saved sector values into the new entry)
   sectorCount = 1;
   [...sectorCountSeg.children].forEach((b, i) => b.classList.toggle('active', i === 0));
-  renderSectorBlocks();
+  renderSectorBlocks(false);
   document.getElementById('entryDelay').value = '';
   document.getElementById('entryWillingToFly').checked = false;
   document.getElementById('entryNotes').value = '';
@@ -447,7 +516,7 @@ function renderEntries() {
     let title, sub;
     if (e.type === 'sector') {
       title = `${e.origin} → ${e.dest}`;
-      sub = e.diverted ? 'Diverted enroute (manual)' : (e.returnToStand ? 'Nominal (return to stand)' : categoryLabel(e.category));
+      sub = e.diverted ? `Diverted enroute${e.divertedTo ? ' to ' + e.divertedTo : ''} (manual)` : (e.returnToStand ? 'Nominal (return to stand)' : categoryLabel(e.category));
     } else if (e.type === 'standby') { title = 'Standby'; sub = `${e.standbyMinutes || 0} min`; }
     else { title = e.otherDesc || 'Other pay'; sub = e.date; }
     const tags = [];
@@ -614,6 +683,47 @@ function parsePayslipText(text) {
 
 let pendingImport = [];
 
+// extracts text from a PDF page-by-page, grouping items sharing a y-position into one line
+// so the output reads similarly to what you'd get copy-pasting from a PDF viewer
+async function extractTextFromPdf(file) {
+  if (!window.__pdfjsLib) throw new Error('The PDF reader is still loading — wait a second and try again.');
+  const buf = await file.arrayBuffer();
+  const doc = await window.__pdfjsLib.getDocument({ data: buf }).promise;
+  let text = '';
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    let lastY = null, line = '';
+    for (const item of content.items) {
+      const y = item.transform[5];
+      if (lastY !== null && Math.abs(y - lastY) > 2) { text += line.trim() + '\n'; line = ''; }
+      line += item.str + ' ';
+      lastY = y;
+    }
+    text += line.trim() + '\n';
+  }
+  return text;
+}
+
+document.getElementById('payslipPdfFile').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('payslipPdfStatus');
+  status.textContent = 'Reading PDF…';
+  try {
+    const text = await extractTextFromPdf(file);
+    document.getElementById('payslipPasteArea').value = text;
+    pendingImport = parsePayslipText(text);
+    renderImportPreview();
+    status.textContent = pendingImport.length
+      ? `Read ${pendingImport.length} rows from the PDF — check them below before importing.`
+      : 'Read the PDF but found nothing recognisable. Check the text below, or paste the VARIABLE PAY section manually.';
+  } catch (e) {
+    status.textContent = 'Could not read that PDF (' + e.message + '). Try pasting the text instead.';
+  }
+  document.getElementById('payslipPdfFile').value = '';
+});
+
 document.getElementById('parsePayslipBtn').addEventListener('click', () => {
   const text = document.getElementById('payslipPasteArea').value;
   if (!text.trim()) { alert('Paste the VARIABLE PAY section text first.'); return; }
@@ -777,6 +887,54 @@ function renderStats() {
   const topContainer = document.getElementById('topRoutes');
   topContainer.innerHTML = top.length === 0 ? '<div class="empty">No sectors logged yet.</div>' :
     top.map(([route, count]) => `<div class="entry-item"><div class="route">${route}</div><div class="amount">${count}×</div></div>`).join('');
+
+  renderBreakdowns();
+}
+
+// month-by-month and year-by-year totals, independent of the period selector above
+function renderBreakdowns() {
+  const byMonth = {};
+  const byYear = {};
+  entries.forEach(e => {
+    const mk = monthKey(e.date);
+    const yk = yearKey(e.date);
+    if (!mk || !yk) return;
+    const pay = computeEntryPay(e);
+    const dm = Number(e.delayMinutes) || 0;
+    const split = dm > 0 ? delaySplit(dm, dealFor(e.date)) : { paidMinutes: 0, unpaidMinutes: 0 };
+
+    if (!byMonth[mk]) byMonth[mk] = { total: 0, sectors: 0, unpaidDelay: 0, paidDelay: 0 };
+    byMonth[mk].total += pay.total;
+    if (e.type === 'sector') byMonth[mk].sectors++;
+    byMonth[mk].unpaidDelay += split.unpaidMinutes;
+    byMonth[mk].paidDelay += split.paidMinutes;
+
+    if (!byYear[yk]) byYear[yk] = { total: 0, sectors: 0, unpaidDelay: 0, paidDelay: 0 };
+    byYear[yk].total += pay.total;
+    if (e.type === 'sector') byYear[yk].sectors++;
+    byYear[yk].unpaidDelay += split.unpaidMinutes;
+    byYear[yk].paidDelay += split.paidMinutes;
+  });
+
+  const rowHtml = (label, s) => `
+    <div class="entry-item">
+      <div>
+        <div class="route">${label}</div>
+        <div class="meta">${s.sectors} sectors · ${fmtMins(s.unpaidDelay)} unpaid delay, ${fmtMins(s.paidDelay)} paid</div>
+      </div>
+      <div class="amount">${fmtGBP(s.total)}</div>
+    </div>`;
+
+  const monthRows = Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0]));
+  const yearRows = Object.entries(byYear).sort((a, b) => b[0].localeCompare(a[0]));
+
+  document.getElementById('monthlyBreakdown').innerHTML = monthRows.length === 0
+    ? '<div class="empty">No entries logged yet.</div>'
+    : monthRows.map(([k, s]) => rowHtml(k, s)).join('');
+
+  document.getElementById('yearlyBreakdown').innerHTML = yearRows.length === 0
+    ? '<div class="empty">No entries logged yet.</div>'
+    : yearRows.map(([k, s]) => rowHtml(k, s)).join('');
 }
 
 // ---------- Settings ----------
@@ -821,7 +979,7 @@ function fillSettingsForm() {
   document.getElementById('routeCountLabel').textContent = `${routes.length} routes`;
   routeList.innerHTML = routes.map(([route, cat]) => `
     <div class="route-manager-item">
-      <span>${route}</span>
+      <span>${displayRoute(route)}</span>
       <select data-route="${route}">${cats.map(c => `<option value="${c}" ${c === cat ? 'selected' : ''}>${categoryLabel(c)}</option>`).join('')}</select>
     </div>`).join('');
   routeList.querySelectorAll('select').forEach(sel => {
@@ -907,8 +1065,21 @@ document.getElementById('wipeBtn').addEventListener('click', () => {
 });
 
 // ---------- Service worker ----------
+// PWAs installed on a phone keep serving whatever was cached on first install otherwise -
+// this makes sure a newly-activated worker takes over and reloads the page automatically.
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.update();
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update(); });
+    }).catch(() => {});
+  });
+  let refreshingForUpdate = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshingForUpdate) return;
+    refreshingForUpdate = true;
+    location.reload();
+  });
 }
 
 function updateOnlinePill() {

@@ -165,7 +165,11 @@
 
     <div class="card">
       <h2><span class="dot"></span>Import old payslips</h2>
-      <div class="helptext" style="margin-bottom:10px;">Open your old CVP supplementary payslip PDF, select and copy the whole VARIABLE PAY section, and paste it below. Sector pay imports with route and amount worked out automatically; standby and day-off lines import as placeholders since the payslip doesn't show those amounts per line, you'll want to fill those in from the TOTALS section.</div>
+      <div class="helptext" style="margin-bottom:10px;">Upload the PDF directly and it's read automatically, or open it yourself, copy the whole VARIABLE PAY section, and paste it below. Sector pay imports with route and amount worked out automatically; standby and day-off lines import as placeholders since the payslip doesn't show those amounts per line, you'll want to fill those in from the TOTALS section.</div>
+      <label for="payslipPdfFile">Upload payslip PDF</label>
+      <input type="file" id="payslipPdfFile" accept="application/pdf">
+      <div id="payslipPdfStatus" class="helptext"></div>
+      <label for="payslipPasteArea" style="margin-top:14px;">...or paste the text</label>
       <textarea id="payslipPasteArea" rows="5" placeholder="Paste the VARIABLE PAY section text here"></textarea>
       <button class="ghost" id="parsePayslipBtn">Read pasted text</button>
       <div id="importPreview" style="margin-top:10px;"></div>
@@ -195,6 +199,14 @@
     <div class="card">
       <h2><span class="dot"></span>Top routes</h2>
       <div id="topRoutes"></div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>Monthly breakdown</h2>
+      <div id="monthlyBreakdown"></div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>Yearly breakdown</h2>
+      <div id="yearlyBreakdown"></div>
     </div>
   </section>
 
@@ -259,6 +271,11 @@
   </button>
 </div>
 
+<script type="module">
+  import * as pdfjsLib from './vendor/pdf.min.mjs';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = './vendor/pdf.worker.min.mjs';
+  window.__pdfjsLib = pdfjsLib;
+</script>
 <script src="app.js"></script>
 </body>
 </html>
