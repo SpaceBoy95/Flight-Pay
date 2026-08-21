@@ -340,3 +340,36 @@ button.ghost{
 }
 
 a{color:var(--amber);}
+
+.sector-block{
+  border:1px solid var(--navy-600);
+  border-radius:11px;
+  padding:12px;
+  margin-top:12px;
+  background:var(--navy-800);
+}
+.sector-block:first-child{margin-top:14px;}
+.sector-block-head{
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--amber);
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  margin-bottom:8px;
+}
+
+.pay-deal-card{
+  border:1px solid var(--navy-600);
+  border-radius:11px;
+  padding:12px;
+  margin-top:12px;
+  background:var(--navy-800);
+}
+.pay-deal-card:first-child{margin-top:0;}
+.pay-deal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:4px;
+}
+.pay-deal-head input[type=date]{flex:1; margin-right:8px;}

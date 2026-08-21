@@ -40,43 +40,17 @@
         <label for="entryDate">Date</label>
         <input type="date" id="entryDate">
 
-        <div class="row">
-          <div>
-            <label for="entryOrigin">From</label>
-            <input type="text" id="entryOrigin" placeholder="MAN" maxlength="4" style="text-transform:uppercase">
-          </div>
-          <div>
-            <label for="entryDest">To</label>
-            <input type="text" id="entryDest" placeholder="CDG" maxlength="4" style="text-transform:uppercase">
-          </div>
+        <label>Sectors today</label>
+        <div class="segmented" id="sectorCountSeg">
+          <button data-val="1" class="active">1</button>
+          <button data-val="2">2</button>
+          <button data-val="3">3</button>
+          <button data-val="4">4</button>
+          <button data-val="5">5</button>
         </div>
+        <div class="helptext">Delay and day-off pay apply once per duty, so they're only counted against Sector 1.</div>
 
-        <label for="entryCategorySelect">Sector length</label>
-        <select id="entryCategorySelect">
-          <option value="">Select or type route above</option>
-          <option value="nominal">Nominal (£21.56)</option>
-          <option value="short">Short (£17.25)</option>
-          <option value="medium">Medium (£25.87)</option>
-          <option value="long">Long (£32.34)</option>
-          <option value="extraLong">Extra Long (£53.90)</option>
-          <option value="ultraLong">Ultra Long (£64.68)</option>
-        </select>
-        <div class="helptext" id="routeMemoryNote"></div>
-
-        <div class="check-row">
-          <span>Returned to stand / diverted to base</span>
-          <label class="switch">
-            <input type="checkbox" id="entryReturnToStand">
-            <span class="track"></span><span class="thumb"></span>
-          </label>
-        </div>
-        <div class="helptext">Forces Nominal rate regardless of route.</div>
-
-        <label for="entryBar">Bar takings this sector (£)</label>
-        <input type="number" id="entryBar" inputmode="decimal" placeholder="0.00" step="0.01">
-
-        <label for="entryCrew">Crew operating</label>
-        <input type="number" id="entryCrew" inputmode="numeric" placeholder="4" min="1">
+        <div id="sectorBlocksContainer"></div>
       </div>
 
       <div id="standbyFields" style="display:none;">
@@ -188,12 +162,34 @@
 
       <div id="compareResults" style="margin-top:16px;"></div>
     </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Import old payslips</h2>
+      <div class="helptext" style="margin-bottom:10px;">Open your old CVP supplementary payslip PDF, select and copy the whole VARIABLE PAY section, and paste it below. Sector pay imports with route and amount worked out automatically; standby and day-off lines import as placeholders since the payslip doesn't show those amounts per line, you'll want to fill those in from the TOTALS section.</div>
+      <textarea id="payslipPasteArea" rows="5" placeholder="Paste the VARIABLE PAY section text here"></textarea>
+      <button class="ghost" id="parsePayslipBtn">Read pasted text</button>
+      <div id="importPreview" style="margin-top:10px;"></div>
+      <button class="primary" id="confirmImportBtn" style="display:none;">Import</button>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Import delay history from CSV</h2>
+      <div class="helptext" style="margin-bottom:10px;">For a CSV export (e.g. from Flighty or your own log). Pick the file, then tell the app which columns hold the date and delay minutes, this only logs delay evidence, no pay is attached.</div>
+      <input type="file" id="csvFile" accept=".csv,text/csv">
+      <div id="csvMapping"></div>
+      <button class="primary" id="csvImportBtn" style="display:none;">Import delay rows</button>
+    </div>
   </section>
 
   <!-- STATS VIEW -->
   <section class="view" id="view-stats">
     <div class="card">
-      <h2><span class="dot"></span>All-time stats</h2>
+      <h2><span class="dot"></span>Stats</h2>
+      <div class="segmented" id="statsPeriodSeg" style="margin-bottom:14px;">
+        <button data-val="month">This month</button>
+        <button data-val="year">This year</button>
+        <button data-val="all" class="active">All time</button>
+      </div>
       <div class="stat-grid" id="statsGrid"></div>
     </div>
     <div class="card">
@@ -205,39 +201,10 @@
   <!-- SETTINGS VIEW -->
   <section class="view" id="view-settings">
     <div class="card">
-      <h2><span class="dot"></span>Sector pay rates (£, per direction)</h2>
-      <label for="rateNominal">Nominal</label>
-      <input type="number" id="rateNominal" step="0.01">
-      <label for="rateShort">Short</label>
-      <input type="number" id="rateShort" step="0.01">
-      <label for="rateMedium">Medium</label>
-      <input type="number" id="rateMedium" step="0.01">
-      <label for="rateLong">Long</label>
-      <input type="number" id="rateLong" step="0.01">
-      <label for="rateExtraLong">Extra Long</label>
-      <input type="number" id="rateExtraLong" step="0.01">
-      <label for="rateUltraLong">Ultra Long</label>
-      <input type="number" id="rateUltraLong" step="0.01">
-    </div>
-
-    <div class="card">
-      <h2><span class="dot"></span>Commission &amp; delay</h2>
-      <label for="commissionPercent">Commission % of bar takings</label>
-      <input type="number" id="commissionPercent" step="0.1">
-
-      <label for="delayTier1">Paid at 1 hour+ (£)</label>
-      <input type="number" id="delayTier1" step="0.01">
-      <label for="delayTier2">Paid at 2 hours+ (£)</label>
-      <input type="number" id="delayTier2" step="0.01">
-    </div>
-
-    <div class="card">
-      <h2><span class="dot"></span>Day off disruption</h2>
-      <label for="ddoAmount">DDO amount (£) - under 90 min</label>
-      <input type="number" id="ddoAmount" step="0.01">
-      <label for="idoAmount">IDO amount (£) - 90 min or more</label>
-      <input type="number" id="idoAmount" step="0.01" placeholder="Not confirmed yet">
-      <div class="helptext" id="idoWarning"></div>
+      <h2><span class="dot"></span>Pay deals</h2>
+      <div class="helptext" style="margin-bottom:10px;">Each pay deal applies from its effective date onwards. Entries always use whichever deal was in force on their own date, so adding a new deal for a pay rise never changes what past entries worked out to.</div>
+      <div id="payDealsList"></div>
+      <button class="ghost" id="addPayDealBtn">+ Add new pay deal</button>
     </div>
 
     <div class="card">
@@ -247,7 +214,8 @@
     </div>
 
     <div class="card">
-      <h2><span class="dot"></span>Known routes</h2>
+      <h2><span class="dot"></span>Known routes <span id="routeCountLabel" style="margin-left:auto;font-family:var(--mono);font-weight:400;text-transform:none;letter-spacing:0;"></span></h2>
+      <div class="banner">Seeded from your MAN base sector length map. Auto-read from a photo of the chart, so worth a skim, especially anything that looks off. Tap a dropdown to fix it in a couple of seconds.</div>
       <div id="routeManagerList"></div>
     </div>
 
