@@ -219,62 +219,93 @@ dayOffSeg.addEventListener('click', (ev) => {
 });
 
 const sectorCountSeg = document.getElementById('sectorCountSeg');
+let expandedSectorIdx = 0;
 sectorCountSeg.addEventListener('click', (ev) => {
   const btn = ev.target.closest('button');
   if (!btn) return;
   sectorCount = Number(btn.dataset.val);
   [...sectorCountSeg.children].forEach(b => b.classList.toggle('active', b === btn));
+  expandedSectorIdx = sectorCount - 1; // reveal the newly-added sector, collapse the rest
   renderSectorBlocks();
 });
 
 function sectorBlockTemplate(i) {
   return `
   <div class="sector-block" data-idx="${i}">
-    <div class="sector-block-head">Sector ${i + 1}</div>
-    <div class="row">
-      <div>
-        <label>From</label>
-        <input type="text" class="sb-origin" placeholder="MAN" maxlength="4" style="text-transform:uppercase">
+    <button type="button" class="sector-block-head">
+      <span class="sector-block-title">Sector ${i + 1}</span>
+      <span class="sector-block-summary"></span>
+      <span class="sector-block-chevron">▾</span>
+    </button>
+    <div class="sector-block-body">
+      <div class="row">
+        <div>
+          <label>From</label>
+          <input type="text" class="sb-origin" placeholder="MAN" maxlength="4" style="text-transform:uppercase">
+        </div>
+        <div>
+          <label>To</label>
+          <input type="text" class="sb-dest" placeholder="CDG" maxlength="4" style="text-transform:uppercase">
+        </div>
       </div>
-      <div>
-        <label>To</label>
-        <input type="text" class="sb-dest" placeholder="CDG" maxlength="4" style="text-transform:uppercase">
+      <label>Sector length</label>
+      <select class="sb-category">
+        <option value="">Select or type route above</option>
+        <option value="nominal">Nominal (£21.56)</option>
+        <option value="short">Short</option>
+        <option value="medium">Medium</option>
+        <option value="long">Long</option>
+        <option value="extraLong">Extra Long</option>
+        <option value="ultraLong">Ultra Long</option>
+      </select>
+      <div class="helptext sb-route-note"></div>
+
+      <div class="check-row">
+        <span>Returned to stand / diverted to base</span>
+        <label class="switch"><input type="checkbox" class="sb-return"><span class="track"></span><span class="thumb"></span></label>
       </div>
-    </div>
-    <label>Sector length</label>
-    <select class="sb-category">
-      <option value="">Select or type route above</option>
-      <option value="nominal">Nominal (£21.56)</option>
-      <option value="short">Short</option>
-      <option value="medium">Medium</option>
-      <option value="long">Long</option>
-      <option value="extraLong">Extra Long</option>
-      <option value="ultraLong">Ultra Long</option>
-    </select>
-    <div class="helptext sb-route-note"></div>
 
-    <div class="check-row">
-      <span>Returned to stand / diverted to base</span>
-      <label class="switch"><input type="checkbox" class="sb-return"><span class="track"></span><span class="thumb"></span></label>
-    </div>
+      <div class="check-row">
+        <span>Diverted enroute to a different airport</span>
+        <label class="switch"><input type="checkbox" class="sb-diverted"><span class="track"></span><span class="thumb"></span></label>
+      </div>
+      <div class="sb-manual-pay-wrap" style="display:none;">
+        <label>Diverted to (airport)</label>
+        <input type="text" class="sb-diverted-to" placeholder="e.g. BRS" maxlength="4" style="text-transform:uppercase">
+        <label>Sector pay for this diversion (£) - work out manually</label>
+        <input type="number" class="sb-manual-pay" step="0.01" placeholder="0.00">
+      </div>
 
-    <div class="check-row">
-      <span>Diverted enroute to a different airport</span>
-      <label class="switch"><input type="checkbox" class="sb-diverted"><span class="track"></span><span class="thumb"></span></label>
-    </div>
-    <div class="sb-manual-pay-wrap" style="display:none;">
-      <label>Diverted to (airport)</label>
-      <input type="text" class="sb-diverted-to" placeholder="e.g. BRS" maxlength="4" style="text-transform:uppercase">
-      <label>Sector pay for this diversion (£) - work out manually</label>
-      <input type="number" class="sb-manual-pay" step="0.01" placeholder="0.00">
-    </div>
+      <label>Bar takings this sector (£)</label>
+      <input type="number" class="sb-bar" inputmode="decimal" step="0.01" placeholder="0.00">
 
-    <label>Bar takings this sector (£)</label>
-    <input type="number" class="sb-bar" inputmode="decimal" step="0.01" placeholder="0.00">
-
-    <label>Crew operating</label>
-    <input type="number" class="sb-crew" inputmode="numeric" min="1" placeholder="4">
+      <label>Crew operating</label>
+      <input type="number" class="sb-crew" inputmode="numeric" min="1" placeholder="4">
+      <div class="helptext">Commission is split evenly across this many crew — e.g. £4,000 bar takings at 10% with 4 crew is £100 each.</div>
+    </div>
   </div>`;
+}
+
+// collapsed-card summary line, e.g. "MAN → CDG · Short" - kept live so a collapsed
+// sector still shows what's in it without having to open it back up
+function sectorBlockSummary(block) {
+  const o = block.querySelector('.sb-origin').value.trim().toUpperCase();
+  const d = block.querySelector('.sb-dest').value.trim().toUpperCase();
+  const route = o && d ? `${o} → ${d}` : '';
+  let detail;
+  if (block.querySelector('.sb-diverted').checked) detail = 'Diverted';
+  else if (block.querySelector('.sb-return').checked) detail = 'Return to stand';
+  else detail = categoryLabel(block.querySelector('.sb-category').value) || '';
+  return [route, detail].filter(Boolean).join(' · ') || 'Not filled in yet';
+}
+
+function applySectorAccordionState(container) {
+  container.querySelectorAll('.sector-block').forEach(block => {
+    const idx = Number(block.dataset.idx);
+    const expanded = idx === expandedSectorIdx;
+    block.classList.toggle('collapsed', !expanded);
+    block.querySelector('.sector-block-summary').textContent = expanded ? '' : sectorBlockSummary(block);
+  });
 }
 
 function captureSectorBlockValues() {
@@ -359,8 +390,18 @@ function renderSectorBlocks(preserveExisting = true) {
     block.querySelector('.sb-diverted-to')?.addEventListener('input', updateComputedStrip);
   });
   if (preservedValues.length) applySectorBlockValues(preservedValues);
+  applySectorAccordionState(container);
   updateComputedStrip();
 }
+
+document.getElementById('sectorBlocksContainer').addEventListener('click', (ev) => {
+  const head = ev.target.closest('.sector-block-head');
+  if (!head) return;
+  const block = head.closest('.sector-block');
+  const idx = Number(block.dataset.idx);
+  expandedSectorIdx = expandedSectorIdx === idx ? -1 : idx; // click again to close, only one open at a time
+  applySectorAccordionState(document.getElementById('sectorBlocksContainer'));
+});
 
 document.getElementById('entryDelay').addEventListener('input', updateComputedStrip);
 document.getElementById('standbyPay').addEventListener('input', updateComputedStrip);
@@ -447,6 +488,9 @@ function updateComputedStrip() {
   });
   lines += `<div class="line total"><span>Entry total</span><span>${fmtGBP(grandTotal)}</span></div>`;
   strip.innerHTML = lines;
+
+  const sbContainer = document.getElementById('sectorBlocksContainer');
+  if (sbContainer) applySectorAccordionState(sbContainer);
 }
 
 document.getElementById('saveEntryBtn').addEventListener('click', () => {
@@ -456,6 +500,7 @@ document.getElementById('saveEntryBtn').addEventListener('click', () => {
     for (const d of drafts) {
       if (!d.origin || !d.dest) { alert('Add both airports for every sector.'); return; }
       if (!d.returnToStand && !d.diverted && !d.category) { alert('Pick a sector length for every sector (or mark it as return to stand / diverted).'); return; }
+      if ((Number(d.barTakings) || 0) > 0 && !(Number(d.crewCount) > 0)) { alert('Enter the crew operating so commission can be split correctly.'); return; }
     }
   }
 
@@ -472,6 +517,7 @@ document.getElementById('saveEntryBtn').addEventListener('click', () => {
 
   // reset form (clean wipe - don't carry the just-saved sector values into the new entry)
   sectorCount = 1;
+  expandedSectorIdx = 0;
   [...sectorCountSeg.children].forEach((b, i) => b.classList.toggle('active', i === 0));
   renderSectorBlocks(false);
   document.getElementById('entryDelay').value = '';
@@ -685,10 +731,7 @@ let pendingImport = [];
 
 // extracts text from a PDF page-by-page, grouping items sharing a y-position into one line
 // so the output reads similarly to what you'd get copy-pasting from a PDF viewer
-async function extractTextFromPdf(file) {
-  if (!window.__pdfjsLib) throw new Error('The PDF reader is still loading — wait a second and try again.');
-  const buf = await file.arrayBuffer();
-  const doc = await window.__pdfjsLib.getDocument({ data: buf }).promise;
+async function readPdfText(doc) {
   let text = '';
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
@@ -703,6 +746,36 @@ async function extractTextFromPdf(file) {
     text += line.trim() + '\n';
   }
   return text;
+}
+
+function withTimeout(promise, ms, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms))
+  ]);
+}
+
+async function extractTextFromPdf(file) {
+  if (!window.__pdfjsLib) throw new Error('The PDF reader is still loading — wait a second and try again.');
+  const buf = new Uint8Array(await file.arrayBuffer());
+  try {
+    const doc = await withTimeout(
+      window.__pdfjsLib.getDocument({ data: buf }).promise,
+      12000,
+      'Timed out starting the PDF reader.'
+    );
+    return await readPdfText(doc);
+  } catch (e) {
+    // Some browsers (notably Safari, when the page is controlled by a service worker) can
+    // fail to start pdf.js's dedicated module worker and hang or throw instead of reading
+    // the file. Retry once with the worker disabled so parsing runs on the main thread.
+    const doc = await withTimeout(
+      window.__pdfjsLib.getDocument({ data: buf, worker: null }).promise,
+      20000,
+      'Timed out reading the PDF, even without the background worker.'
+    );
+    return await readPdfText(doc);
+  }
 }
 
 document.getElementById('payslipPdfFile').addEventListener('change', async (ev) => {
@@ -779,12 +852,47 @@ document.getElementById('csvFile').addEventListener('change', (ev) => {
     csvHeaders = parsed.headers;
     csvRows = parsed.rows;
     const mapDiv = document.getElementById('csvMapping');
-    const opts = ['— none —', ...csvHeaders].map(h => `<option>${h}</option>`).join('');
+
+    // guess sensible defaults - Flighty-style exports don't have a ready-made "delay minutes"
+    // column, but do have scheduled vs actual arrival timestamps we can work the delay out from
+    const findCol = (...names) => csvHeaders.find(h => names.some(n => h.toLowerCase() === n.toLowerCase())) || '— none —';
+    const guessDate = findCol('date');
+    const guessOrigin = findCol('from', 'origin', 'departure airport');
+    const guessDest = findCol('to', 'destination', 'arrival airport');
+    const guessDelayMinutes = findCol('delay', 'delay minutes', 'delay (minutes)');
+    const guessSched = findCol('gate arrival (scheduled)', 'landing (scheduled)', 'scheduled arrival');
+    const guessActual = findCol('gate arrival (actual)', 'landing (actual)', 'actual arrival');
+    const defaultMode = guessDelayMinutes !== '— none —' ? 'minutes'
+      : (guessSched !== '— none —' && guessActual !== '— none —' ? 'timestamps' : 'minutes');
+
+    const opts = (selected) => ['— none —', ...csvHeaders].map(h => `<option ${h === selected ? 'selected' : ''}>${h}</option>`).join('');
+
     mapDiv.innerHTML = `
-      <label>Date column</label><select id="csvDateCol">${opts}</select>
-      <label>Route / flight column (optional)</label><select id="csvRouteCol">${opts}</select>
-      <label>Delay minutes column</label><select id="csvDelayCol">${opts}</select>
+      <label>Date column</label><select id="csvDateCol">${opts(guessDate)}</select>
+      <label>Origin column (optional)</label><select id="csvOriginCol">${opts(guessOrigin)}</select>
+      <label>Destination column (optional)</label><select id="csvDestCol">${opts(guessDest)}</select>
+
+      <label>How is the delay recorded?</label>
+      <select id="csvDelayMode">
+        <option value="minutes" ${defaultMode === 'minutes' ? 'selected' : ''}>A single delay-minutes column</option>
+        <option value="timestamps" ${defaultMode === 'timestamps' ? 'selected' : ''}>Scheduled vs actual arrival time (work the delay out for me)</option>
+      </select>
+
+      <div id="csvDelayMinutesWrap" style="${defaultMode === 'minutes' ? '' : 'display:none;'}">
+        <label>Delay minutes column</label><select id="csvDelayCol">${opts(guessDelayMinutes)}</select>
+      </div>
+      <div id="csvDelayTimestampsWrap" style="${defaultMode === 'timestamps' ? '' : 'display:none;'}">
+        <label>Scheduled arrival column</label><select id="csvSchedCol">${opts(guessSched)}</select>
+        <label>Actual arrival column</label><select id="csvActualCol">${opts(guessActual)}</select>
+      </div>
       <div class="helptext">${csvRows.length} rows found in file.</div>`;
+
+    document.getElementById('csvDelayMode').addEventListener('change', (e) => {
+      const mode = e.target.value;
+      document.getElementById('csvDelayMinutesWrap').style.display = mode === 'minutes' ? 'block' : 'none';
+      document.getElementById('csvDelayTimestampsWrap').style.display = mode === 'timestamps' ? 'block' : 'none';
+    });
+
     document.getElementById('csvImportBtn').style.display = 'block';
   };
   reader.readAsText(file);
@@ -810,25 +918,51 @@ function parseCSV(text) {
 
 document.getElementById('csvImportBtn').addEventListener('click', () => {
   const dateCol = document.getElementById('csvDateCol').value;
-  const routeCol = document.getElementById('csvRouteCol').value;
-  const delayCol = document.getElementById('csvDelayCol').value;
-  if (dateCol === '— none —' || delayCol === '— none —') { alert('Pick at least a date column and a delay minutes column.'); return; }
+  const originCol = document.getElementById('csvOriginCol').value;
+  const destCol = document.getElementById('csvDestCol').value;
+  const mode = document.getElementById('csvDelayMode').value;
+  if (dateCol === '— none —') { alert('Pick a date column.'); return; }
   const dateIdx = csvHeaders.indexOf(dateCol);
-  const routeIdx = csvHeaders.indexOf(routeCol);
-  const delayIdx = csvHeaders.indexOf(delayCol);
+  const originIdx = csvHeaders.indexOf(originCol);
+  const destIdx = csvHeaders.indexOf(destCol);
+
+  let getMinutes;
+  if (mode === 'minutes') {
+    const delayCol = document.getElementById('csvDelayCol').value;
+    if (delayCol === '— none —') { alert('Pick the delay minutes column.'); return; }
+    const delayIdx = csvHeaders.indexOf(delayCol);
+    getMinutes = (row) => Number(row[delayIdx]);
+  } else {
+    const schedCol = document.getElementById('csvSchedCol').value;
+    const actualCol = document.getElementById('csvActualCol').value;
+    if (schedCol === '— none —' || actualCol === '— none —') { alert('Pick both the scheduled and actual arrival columns.'); return; }
+    const schedIdx = csvHeaders.indexOf(schedCol);
+    const actualIdx = csvHeaders.indexOf(actualCol);
+    // delay = how much later the actual arrival was than scheduled, in whole minutes
+    getMinutes = (row) => {
+      const sched = new Date(row[schedIdx]);
+      const actual = new Date(row[actualIdx]);
+      if (isNaN(sched.getTime()) || isNaN(actual.getTime())) return NaN;
+      return Math.round((actual.getTime() - sched.getTime()) / 60000);
+    };
+  }
 
   let imported = 0;
   csvRows.forEach(row => {
     const rawDate = row[dateIdx];
-    const mins = Number(row[delayIdx]);
-    if (!rawDate || !mins || mins <= 0) return;
+    if (!rawDate) return;
+    const mins = getMinutes(row);
+    if (!mins || isNaN(mins) || mins <= 0) return;
     const d = new Date(rawDate);
     if (isNaN(d.getTime())) return;
     const date = d.toISOString().slice(0, 10);
+    const origin = originIdx >= 0 ? row[originIdx] : '';
+    const dest = destIdx >= 0 ? row[destIdx] : '';
+    const label = origin && dest ? `${origin} → ${dest}` : (origin || dest || 'Imported delay');
     entries.push({
       id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
       type: 'other', date,
-      otherDesc: (routeIdx >= 0 ? row[routeIdx] : 'Imported delay') || 'Imported delay',
+      otherDesc: label,
       otherPay: 0, dayOffType: 'none', delayMinutes: mins, willingToFly: false,
       notes: 'Imported from CSV for delay evidence only — no pay attached.',
       source: 'csv-import'
