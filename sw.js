@@ -1,9 +1,13 @@
-const CACHE = 'flightpay-v9';
+const CACHE = 'flightpay-v10';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
+  './sync.js',
+  './firebase-app.js',
+  './firebase-auth.js',
+  './firebase-firestore.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
