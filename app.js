@@ -1,3 +1,8 @@
+// bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
+// obvious from the app itself whether a device has picked up the latest update
+const APP_VERSION = 'v5';
+document.getElementById('appVersion').textContent = APP_VERSION;
+
 // ---------- Storage ----------
 const SETTINGS_KEY = 'flightpay-settings-v2';
 const ENTRIES_KEY = 'flightpay-entries-v1';

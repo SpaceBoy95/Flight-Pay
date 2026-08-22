@@ -28,7 +28,7 @@ html,body{
 }
 
 body{
-  padding-bottom:76px;
+  padding-bottom:calc(76px + env(safe-area-inset-bottom));
   min-height:100vh;
 }
 
@@ -38,7 +38,7 @@ body{
   z-index:10;
   background:linear-gradient(180deg, var(--navy-900) 0%, rgba(11,18,32,0.92) 100%);
   border-bottom:1px solid var(--navy-700);
-  padding:14px 16px 12px;
+  padding:calc(14px + env(safe-area-inset-top)) 16px 12px;
   display:flex;
   align-items:baseline;
   justify-content:space-between;
@@ -51,6 +51,14 @@ body{
   font-size:13px;
   color:var(--amber);
   text-transform:uppercase;
+}
+
+.version-pill{
+  font-family:var(--mono);
+  letter-spacing:normal;
+  text-transform:none;
+  font-size:11px;
+  color:var(--ink-500);
 }
 
 .topbar h1{
@@ -268,7 +276,7 @@ button.ghost{
   background:var(--navy-900);
   border-top:1px solid var(--navy-700);
   display:flex;
-  padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  padding:6px 4px calc(10px + env(safe-area-inset-bottom));
   z-index:10;
 }
 .navbar button{
