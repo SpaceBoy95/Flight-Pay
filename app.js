@@ -1,6 +1,6 @@
 // bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
 // obvious from the app itself whether a device has picked up the latest update
-const APP_VERSION = 'v5';
+const APP_VERSION = 'v6';
 document.getElementById('appVersion').textContent = APP_VERSION;
 
 // ---------- Storage ----------
@@ -626,9 +626,20 @@ function renderDelays() {
     const detail = s.status === 'paid' ? `${fmtMins(s.paidMinutes)} paid (${fmtGBP(s.amount)}), ${fmtMins(s.unpaidMinutes)} unpaid on top` : `${fmtMins(s.unpaidMinutes)} — all unpaid`;
     return `<div class="entry-item">
       <div><div class="route">${label}</div><div class="meta">${e.date} · ${fmtMins(e.delayMinutes)} total delay</div></div>
-      <div class="tags">${s.status === 'paid' ? `<span class="tag ok">${detail}</span>` : `<span class="tag warn">${detail}</span>`}</div>
+      <div>
+        <div class="tags">${s.status === 'paid' ? `<span class="tag ok">${detail}</span>` : `<span class="tag warn">${detail}</span>`}</div>
+        <button class="icon-btn" data-del="${e.id}">✕</button>
+      </div>
     </div>`;
   }).join('');
+  container.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Remove this delay record?')) return;
+      entries = entries.filter(e => e.id !== btn.dataset.del);
+      saveEntries(entries);
+      renderDelays();
+    });
+  });
 }
 
 // ---------- Payslip cross-check (single month) ----------
@@ -762,8 +773,11 @@ function withTimeout(promise, ms, message) {
 
 async function extractTextFromPdf(file) {
   if (!window.__pdfjsLib) throw new Error('The PDF reader is still loading — wait a second and try again.');
-  const buf = new Uint8Array(await file.arrayBuffer());
   try {
+    // a fresh Uint8Array per attempt - pdf.js transfers (and so detaches) this buffer
+    // when handing it to its worker, and reusing an already-detached buffer on retry
+    // throws "The object can not be cloned" instead of actually retrying
+    const buf = new Uint8Array(await file.arrayBuffer());
     const doc = await withTimeout(
       window.__pdfjsLib.getDocument({ data: buf }).promise,
       12000,
@@ -774,6 +788,7 @@ async function extractTextFromPdf(file) {
     // Some browsers (notably Safari, when the page is controlled by a service worker) can
     // fail to start pdf.js's dedicated module worker and hang or throw instead of reading
     // the file. Retry once with the worker disabled so parsing runs on the main thread.
+    const buf = new Uint8Array(await file.arrayBuffer());
     const doc = await withTimeout(
       window.__pdfjsLib.getDocument({ data: buf, worker: null }).promise,
       20000,
@@ -952,7 +967,10 @@ document.getElementById('csvImportBtn').addEventListener('click', () => {
     };
   }
 
-  let imported = 0;
+  // group by day - a delayed roster runs late as a whole duty, not as separate delays
+  // per sector, so a 4-sector day all running ~30min late becomes one 30min delay
+  // entry for that day (the worst delay seen that day), not four
+  const byDate = new Map();
   csvRows.forEach(row => {
     const rawDate = row[dateIdx];
     if (!rawDate) return;
@@ -963,19 +981,29 @@ document.getElementById('csvImportBtn').addEventListener('click', () => {
     const date = d.toISOString().slice(0, 10);
     const origin = originIdx >= 0 ? row[originIdx] : '';
     const dest = destIdx >= 0 ? row[destIdx] : '';
-    const label = origin && dest ? `${origin} → ${dest}` : (origin || dest || 'Imported delay');
+    if (!byDate.has(date)) byDate.set(date, { maxMins: 0, legs: [] });
+    const day = byDate.get(date);
+    day.maxMins = Math.max(day.maxMins, mins);
+    if (origin || dest) day.legs.push(origin && dest ? `${origin}-${dest}` : (origin || dest));
+  });
+
+  let imported = 0;
+  byDate.forEach((day, date) => {
+    const label = day.legs.length > 1
+      ? `${day.legs[0]} … ${day.legs[day.legs.length - 1]} (${day.legs.length} sectors)`
+      : (day.legs[0] || 'Imported delay');
     entries.push({
       id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
       type: 'other', date,
       otherDesc: label,
-      otherPay: 0, dayOffType: 'none', delayMinutes: mins, willingToFly: false,
+      otherPay: 0, dayOffType: 'none', delayMinutes: day.maxMins, willingToFly: false,
       notes: 'Imported from CSV for delay evidence only — no pay attached.',
       source: 'csv-import'
     });
     imported++;
   });
   saveEntries(entries);
-  alert(`Imported ${imported} delay records.`);
+  alert(`Imported ${imported} day(s) with a delay.`);
   document.getElementById('csvFile').value = '';
   document.getElementById('csvMapping').innerHTML = '';
   document.getElementById('csvImportBtn').style.display = 'none';
