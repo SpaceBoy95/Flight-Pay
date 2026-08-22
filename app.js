@@ -1,6 +1,6 @@
 // bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
 // obvious from the app itself whether a device has picked up the latest update
-const APP_VERSION = 'v8';
+const APP_VERSION = 'v9';
 document.getElementById('appVersion').textContent = APP_VERSION;
 
 // ---------- Storage ----------
@@ -744,78 +744,6 @@ function parsePayslipText(text) {
 }
 
 let pendingImport = [];
-
-// extracts text from a PDF page-by-page, grouping items sharing a y-position into one line
-// so the output reads similarly to what you'd get copy-pasting from a PDF viewer
-async function readPdfText(doc) {
-  let text = '';
-  for (let i = 1; i <= doc.numPages; i++) {
-    const page = await doc.getPage(i);
-    const content = await page.getTextContent();
-    let lastY = null, line = '';
-    for (const item of content.items) {
-      const y = item.transform[5];
-      if (lastY !== null && Math.abs(y - lastY) > 2) { text += line.trim() + '\n'; line = ''; }
-      line += item.str + ' ';
-      lastY = y;
-    }
-    text += line.trim() + '\n';
-  }
-  return text;
-}
-
-function withTimeout(promise, ms, message) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms))
-  ]);
-}
-
-async function extractTextFromPdf(file) {
-  if (!window.__pdfjsLib) throw new Error('The PDF reader is still loading — wait a second and try again.');
-  try {
-    // a fresh Uint8Array per attempt - pdf.js transfers (and so detaches) this buffer
-    // when handing it to its worker, and reusing an already-detached buffer on retry
-    // throws "The object can not be cloned" instead of actually retrying
-    const buf = new Uint8Array(await file.arrayBuffer());
-    const doc = await withTimeout(
-      window.__pdfjsLib.getDocument({ data: buf }).promise,
-      12000,
-      'Timed out starting the PDF reader.'
-    );
-    return await readPdfText(doc);
-  } catch (e) {
-    // Some browsers (notably Safari, when the page is controlled by a service worker) can
-    // fail to start pdf.js's dedicated module worker and hang or throw instead of reading
-    // the file. Retry once with the worker disabled so parsing runs on the main thread.
-    const buf = new Uint8Array(await file.arrayBuffer());
-    const doc = await withTimeout(
-      window.__pdfjsLib.getDocument({ data: buf, worker: null }).promise,
-      20000,
-      'Timed out reading the PDF, even without the background worker.'
-    );
-    return await readPdfText(doc);
-  }
-}
-
-document.getElementById('payslipPdfFile').addEventListener('change', async (ev) => {
-  const file = ev.target.files[0];
-  if (!file) return;
-  const status = document.getElementById('payslipPdfStatus');
-  status.textContent = 'Reading PDF…';
-  try {
-    const text = await extractTextFromPdf(file);
-    document.getElementById('payslipPasteArea').value = text;
-    pendingImport = parsePayslipText(text);
-    renderImportPreview();
-    status.textContent = pendingImport.length
-      ? `Read ${pendingImport.length} rows from the PDF — check them below before importing.`
-      : 'Read the PDF but found nothing recognisable. Check the text below, or paste the VARIABLE PAY section manually.';
-  } catch (e) {
-    status.textContent = 'Could not read that PDF (' + e.message + '). Try pasting the text instead.';
-  }
-  document.getElementById('payslipPdfFile').value = '';
-});
 
 document.getElementById('parsePayslipBtn').addEventListener('click', () => {
   const text = document.getElementById('payslipPasteArea').value;

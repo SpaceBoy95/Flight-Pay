@@ -1,4 +1,4 @@
-const CACHE = 'flightpay-v8';
+const CACHE = 'flightpay-v9';
 const ASSETS = [
   './',
   './index.html',
@@ -6,9 +6,7 @@ const ASSETS = [
   './app.js',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png',
-  './pdf.min.mjs',
-  './pdf.worker.min.mjs'
+  './icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
