@@ -1,4 +1,4 @@
-const CACHE = 'flightpay-v6';
+const CACHE = 'flightpay-v7';
 const ASSETS = [
   './',
   './index.html',
