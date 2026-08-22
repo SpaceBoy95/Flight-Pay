@@ -1,6 +1,6 @@
 // bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
 // obvious from the app itself whether a device has picked up the latest update
-const APP_VERSION = 'v9';
+const APP_VERSION = 'v10';
 document.getElementById('appVersion').textContent = APP_VERSION;
 
 // ---------- Storage ----------
@@ -80,6 +80,7 @@ function loadSettings() {
 
 function saveSettings(s) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  window.__syncSettings?.(s);
 }
 
 function loadEntries() {
@@ -90,11 +91,29 @@ function loadEntries() {
 
 function saveEntries(list) {
   localStorage.setItem(ENTRIES_KEY, JSON.stringify(list));
+  window.__syncEntries?.(list);
 }
 
 let settings = loadSettings();
 let entries = loadEntries();
 saveSettings(settings); // persist any migration immediately
+
+// ---------- Sync (see sync.js) ----------
+// sync.js calls these when the signed-in account's data changes - either the initial
+// merge on sign-in, or a live update pushed from another device. Deliberately NOT routed
+// through saveEntries/saveSettings, which would just sync the same data straight back.
+window.__getLocalEntries = () => entries;
+window.__getLocalSettings = () => settings;
+window.__applyRemoteEntries = (list) => {
+  entries = list;
+  localStorage.setItem(ENTRIES_KEY, JSON.stringify(list));
+  refreshActiveView();
+};
+window.__applyRemoteSettings = (s) => {
+  settings = s;
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  refreshActiveView();
+};
 
 // ---------- Pay deal lookup ----------
 function dealFor(dateStr) {
@@ -185,8 +204,10 @@ function yearKey(dateStr) { return (dateStr || '').slice(0, 4); }
 // ---------- Navigation ----------
 const views = ['log', 'entries', 'delays', 'payslip', 'stats', 'settings'];
 const titles = { log: 'Log entry', entries: 'Entries', delays: 'Delay evidence', payslip: 'Payslip check', stats: 'Statistics', settings: 'Settings' };
+let currentView = 'log';
 
 function showView(v) {
+  currentView = v;
   views.forEach(name => document.getElementById('view-' + name).classList.toggle('active', name === v));
   document.querySelectorAll('.navbar button').forEach(btn => btn.classList.toggle('active', btn.dataset.view === v));
   document.getElementById('topbarTitle').textContent = titles[v];
@@ -196,6 +217,13 @@ function showView(v) {
   if (v === 'settings') fillSettingsForm();
 }
 document.querySelectorAll('.navbar button').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
+
+// re-renders whichever view is currently open - used when entries/settings change from a
+// sync update (another device) rather than a local action, so the screen stays current
+function refreshActiveView() {
+  if (currentView === 'log') updateComputedStrip();
+  else showView(currentView);
+}
 
 // ---------- Log entry form ----------
 const entryTypeSeg = document.getElementById('entryTypeSeg');

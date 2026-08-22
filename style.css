@@ -32,6 +32,45 @@ body{
   min-height:100vh;
 }
 
+.auth-screen{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:100;
+  background:var(--navy-950);
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  padding-top:calc(24px + env(safe-area-inset-top));
+  padding-bottom:calc(24px + env(safe-area-inset-bottom));
+}
+body.auth-pending .auth-screen{ display:flex; }
+
+.auth-card{
+  width:100%;
+  max-width:360px;
+}
+.auth-card .brand{
+  font-family:var(--mono);
+  letter-spacing:0.06em;
+  font-size:13px;
+  color:var(--amber);
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+.auth-card h1{
+  font-size:22px;
+  margin:0 0 14px;
+}
+.auth-error{
+  color:var(--red);
+  font-size:13px;
+  margin-top:8px;
+  min-height:1em;
+}
+.auth-card button.primary{ margin-top:16px; }
+.auth-card button.ghost{ margin-top:10px; }
+
 .topbar{
   position:sticky;
   top:0;
@@ -114,7 +153,7 @@ label{
 }
 label:first-child{margin-top:0;}
 
-input[type=text],input[type=number],input[type=date],select,textarea{
+input[type=text],input[type=number],input[type=date],input[type=email],input[type=password],select,textarea{
   width:100%;
   background:var(--navy-800);
   border:1px solid var(--navy-600);
