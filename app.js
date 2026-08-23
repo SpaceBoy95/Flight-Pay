@@ -1,6 +1,6 @@
 // bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
 // obvious from the app itself whether a device has picked up the latest update
-const APP_VERSION = 'v12';
+const APP_VERSION = 'v13';
 document.getElementById('appVersion').textContent = APP_VERSION;
 
 // ---------- Storage ----------
@@ -182,6 +182,10 @@ function computeEntryPay(e) {
   if (e.type === 'sector') {
     if (e.diverted) {
       out.sectorPay = Number(e.manualPay) || 0;
+    } else if (e.payslipAmount != null) {
+      // the exact taxable amount read off the payslip itself, when available, takes
+      // precedence over the rate table - it's the ground truth for what was actually paid
+      out.sectorPay = Number(e.payslipAmount) || 0;
     } else {
       const cat = e.returnToStand ? 'nominal' : e.category;
       out.sectorPay = deal.rates[cat] || 0;
@@ -597,7 +601,9 @@ function shiftMonth(ym, delta) {
 function entryBreakdownLines(e, pay) {
   const lines = [];
   if (e.type === 'sector') {
-    const label = e.diverted ? `Diverted sector pay${e.divertedTo ? ' to ' + e.divertedTo : ''}` : `Sector pay (${e.returnToStand ? 'Nominal — return to stand' : categoryLabel(e.category)})`;
+    const label = e.diverted ? `Diverted sector pay${e.divertedTo ? ' to ' + e.divertedTo : ''}`
+      : e.payslipAmount != null ? `Sector pay (${categoryLabel(e.category)}, from payslip)`
+      : `Sector pay (${e.returnToStand ? 'Nominal — return to stand' : categoryLabel(e.category)})`;
     lines.push([label, pay.sectorPay]);
     const bar = Number(e.barTakings) || 0;
     const crew = Number(e.crewCount) || 0;
@@ -777,6 +783,10 @@ function parsePayslipText(text) {
     const chunk = text.slice(start, end);
     const [, dd, mon, yyyy] = marks[i];
     const date = `${yyyy}-${MONTHS[mon]}-${dd}`;
+    // the taxable amount, when it's included in the pasted text (e.g. "... on 04/01/2026 16:11. £64.68") -
+    // takes precedence over guessing from the rate table, since it's the actual figure paid
+    const amountMatch = chunk.match(/£([\d,]+\.\d{2})/);
+    const amount = amountMatch ? Number(amountMatch[1].replace(/,/g, '')) : null;
 
     if (/Sector Pay/i.test(chunk)) {
       const catMatch = CAT_WORD_MAP.find(([word]) => chunk.toLowerCase().includes(word));
@@ -786,6 +796,7 @@ function parsePayslipText(text) {
           include: true, type: 'sector', date,
           origin: routeMatch[1].toUpperCase(), dest: routeMatch[2].toUpperCase(),
           category: catMatch[1], returnToStand: false, diverted: false,
+          payslipAmount: amount,
           barTakings: 0, crewCount: '', dayOffType: 'none', delayMinutes: 0, willingToFly: false,
           notes: 'Imported from payslip — bar takings/crew not on payslip, add if known.',
           source: 'payslip-import'
@@ -795,25 +806,25 @@ function parsePayslipText(text) {
       const minMatch = chunk.match(/(\d+)\s*minute standby/i);
       results.push({
         include: true, type: 'standby', date,
-        standbyMinutes: minMatch ? minMatch[1] : '', standbyPay: 0,
+        standbyMinutes: minMatch ? minMatch[1] : '', standbyPay: amount || 0,
         dayOffType: 'none', delayMinutes: 0, willingToFly: false,
-        notes: 'Imported from payslip — amount not on this line, check your TOTALS section.',
+        notes: amount != null ? 'Imported from payslip.' : 'Imported from payslip — amount not on this line, check your TOTALS section.',
         source: 'payslip-import'
       });
     } else if (/Disrupted\/Infringed Day Off Pay|Delayed day off/i.test(chunk)) {
       results.push({
         include: true, type: 'other', date,
-        otherDesc: 'Disrupted Day Off (imported)', otherPay: 0,
+        otherDesc: 'Disrupted Day Off (imported)', otherPay: amount || 0,
         dayOffType: 'none', delayMinutes: 0, willingToFly: false,
-        notes: 'Imported from payslip — check DDO vs IDO and the amount from your TOTALS section.',
+        notes: amount != null ? 'Imported from payslip — check DDO vs IDO.' : 'Imported from payslip — check DDO vs IDO and the amount from your TOTALS section.',
         source: 'payslip-import'
       });
     } else if (/Leave Pay/i.test(chunk)) {
       results.push({
         include: true, type: 'other', date,
-        otherDesc: 'Leave Pay (imported)', otherPay: 0,
+        otherDesc: 'Leave Pay (imported)', otherPay: amount || 0,
         dayOffType: 'none', delayMinutes: 0, willingToFly: false,
-        notes: 'Imported from payslip — check amount from your TOTALS section.',
+        notes: amount != null ? 'Imported from payslip.' : 'Imported from payslip — check amount from your TOTALS section.',
         source: 'payslip-import'
       });
     }
@@ -839,8 +850,10 @@ function renderImportPreview() {
   }
   container.innerHTML = pendingImport.map((row, i) => {
     const label = row.type === 'sector' ? `${row.origin} → ${row.dest} (${categoryLabel(row.category)})` : (row.type === 'standby' ? `Standby, ${row.standbyMinutes || '?'} min` : row.otherDesc);
+    const amount = row.type === 'sector' ? row.payslipAmount : (row.type === 'standby' ? row.standbyPay : row.otherPay);
+    const amountLabel = amount ? ` — ${fmtGBP(amount)}` : '';
     return `<div class="check-row">
-      <span>${row.date} · ${label}</span>
+      <span>${row.date} · ${label}${amountLabel}</span>
       <label class="switch"><input type="checkbox" class="import-toggle" data-i="${i}" checked><span class="track"></span><span class="thumb"></span></label>
     </div>`;
   }).join('');
