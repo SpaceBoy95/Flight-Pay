@@ -1,6 +1,6 @@
 // bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
 // obvious from the app itself whether a device has picked up the latest update
-const APP_VERSION = 'v13';
+const APP_VERSION = 'v14';
 document.getElementById('appVersion').textContent = APP_VERSION;
 
 // ---------- Storage ----------
@@ -190,9 +190,15 @@ function computeEntryPay(e) {
       const cat = e.returnToStand ? 'nominal' : e.category;
       out.sectorPay = deal.rates[cat] || 0;
     }
-    const crew = Number(e.crewCount) || 1;
-    const bar = Number(e.barTakings) || 0;
-    out.commission = (bar * (deal.commissionPercent / 100)) / crew;
+    if (e.payslipCommission != null) {
+      // the payslip's own commission total for this duty, when available, takes
+      // precedence over working it out from bar takings - already the crew's actual share
+      out.commission = Number(e.payslipCommission) || 0;
+    } else {
+      const crew = Number(e.crewCount) || 1;
+      const bar = Number(e.barTakings) || 0;
+      out.commission = (bar * (deal.commissionPercent / 100)) / crew;
+    }
   } else if (e.type === 'standby') {
     out.standbyPay = Number(e.standbyPay) || 0;
   } else if (e.type === 'other') {
@@ -607,7 +613,10 @@ function entryBreakdownLines(e, pay) {
     lines.push([label, pay.sectorPay]);
     const bar = Number(e.barTakings) || 0;
     const crew = Number(e.crewCount) || 0;
-    lines.push([`Commission (${fmtGBP(bar)} bar takings${crew ? `, ÷ ${crew} crew` : ' — crew not set'})`, pay.commission]);
+    const commissionLabel = e.payslipCommission != null
+      ? `Commission (from payslip, crew-wide bar ${fmtGBP(bar)}${crew ? ` ÷ ${crew} crew` : ''})`
+      : `Commission (${fmtGBP(bar)} bar takings${crew ? `, ÷ ${crew} crew` : ' — crew not set'})`;
+    lines.push([commissionLabel, pay.commission]);
   } else if (e.type === 'standby') {
     lines.push(['Standby pay', pay.standbyPay]);
   } else {
@@ -796,7 +805,7 @@ function parsePayslipText(text) {
           include: true, type: 'sector', date,
           origin: routeMatch[1].toUpperCase(), dest: routeMatch[2].toUpperCase(),
           category: catMatch[1], returnToStand: false, diverted: false,
-          payslipAmount: amount,
+          payslipAmount: amount, payslipCommission: null,
           barTakings: 0, crewCount: '', dayOffType: 'none', delayMinutes: 0, willingToFly: false,
           notes: 'Imported from payslip — bar takings/crew not on payslip, add if known.',
           source: 'payslip-import'
@@ -829,6 +838,52 @@ function parsePayslipText(text) {
       });
     }
   }
+
+  // COMMISSION is a separate table on the payslip, keyed by date rather than by flight -
+  // one duty's total commission can cover several sector legs that day, the same way
+  // delay/day-off pay already apply once per duty rather than once per sector. Lines look
+  // like "04/01/2026 G-UZEE(2) 4 GBP 3017.08 75.43 £75.43" (date, crew wave, crew count,
+  // currency, eligible total, eligible comm, total commission).
+  const commissionByDate = new Map();
+  const commissionLineRe = /(\d{2})\/(\d{2})\/(\d{4})\s+\S+\s+(\d+)\s+GBP\s+([\d,]+\.?\d*)\s+[\d,]+\.?\d*\s+£([\d,]+\.\d{2})/g;
+  for (const m of text.matchAll(commissionLineRe)) {
+    const [, dd, mm, yyyy, numCrew, eligibleTotal, totalComm] = m;
+    const date = `${yyyy}-${mm}-${dd}`;
+    const prev = commissionByDate.get(date) || { amount: 0, crew: 0, bar: 0 };
+    commissionByDate.set(date, {
+      amount: prev.amount + Number(totalComm.replace(/,/g, '')),
+      crew: Number(numCrew) || prev.crew,
+      bar: prev.bar + Number(eligibleTotal.replace(/,/g, ''))
+    });
+  }
+  // attach each date's commission to the first sector imported for that date, mirroring
+  // how the log form attaches delay/day-off pay only to a duty's first sector
+  const seenDates = new Set();
+  for (const row of results) {
+    if (row.type !== 'sector' || seenDates.has(row.date)) continue;
+    seenDates.add(row.date);
+    const comm = commissionByDate.get(row.date);
+    if (comm) {
+      row.payslipCommission = comm.amount;
+      row.barTakings = comm.bar;
+      row.crewCount = comm.crew || '';
+      row.notes = 'Imported from payslip, including commission for this duty.';
+      commissionByDate.delete(row.date);
+    }
+  }
+  // any commission left unclaimed belongs to a flight outside this import (commission is
+  // often reported a roster period late) - keep the money visible as its own line rather
+  // than silently dropping it, so totals still reconcile against the payslip
+  for (const [date, comm] of commissionByDate) {
+    results.push({
+      include: true, type: 'other', date,
+      otherDesc: 'Commission (imported, no matching sector in this import)', otherPay: comm.amount,
+      dayOffType: 'none', delayMinutes: 0, willingToFly: false,
+      notes: 'Imported from payslip — this commission is dated outside the sectors in this import, likely a flight from a previous roster period.',
+      source: 'payslip-import'
+    });
+  }
+
   return results;
 }
 
@@ -850,8 +905,9 @@ function renderImportPreview() {
   }
   container.innerHTML = pendingImport.map((row, i) => {
     const label = row.type === 'sector' ? `${row.origin} → ${row.dest} (${categoryLabel(row.category)})` : (row.type === 'standby' ? `Standby, ${row.standbyMinutes || '?'} min` : row.otherDesc);
-    const amount = row.type === 'sector' ? row.payslipAmount : (row.type === 'standby' ? row.standbyPay : row.otherPay);
-    const amountLabel = amount ? ` — ${fmtGBP(amount)}` : '';
+    let amount = row.type === 'sector' ? row.payslipAmount : (row.type === 'standby' ? row.standbyPay : row.otherPay);
+    if (row.type === 'sector' && row.payslipCommission) amount = (amount || 0) + row.payslipCommission;
+    const amountLabel = amount ? ` — ${fmtGBP(amount)}${row.type === 'sector' && row.payslipCommission ? ' (incl. commission)' : ''}` : '';
     return `<div class="check-row">
       <span>${row.date} · ${label}${amountLabel}</span>
       <label class="switch"><input type="checkbox" class="import-toggle" data-i="${i}" checked><span class="track"></span><span class="thumb"></span></label>
