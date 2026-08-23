@@ -1,6 +1,6 @@
 // bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
 // obvious from the app itself whether a device has picked up the latest update
-const APP_VERSION = 'v11';
+const APP_VERSION = 'v12';
 document.getElementById('appVersion').textContent = APP_VERSION;
 
 // ---------- Storage ----------
@@ -591,6 +591,32 @@ function shiftMonth(ym, delta) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
 }
 
+// the £ breakdown shown when an entry is expanded - whatever computeEntryPay actually
+// added together for this entry, spelled out line by line, plus the bar takings/crew
+// context behind the commission line so it's obvious why it is what it is
+function entryBreakdownLines(e, pay) {
+  const lines = [];
+  if (e.type === 'sector') {
+    const label = e.diverted ? `Diverted sector pay${e.divertedTo ? ' to ' + e.divertedTo : ''}` : `Sector pay (${e.returnToStand ? 'Nominal — return to stand' : categoryLabel(e.category)})`;
+    lines.push([label, pay.sectorPay]);
+    const bar = Number(e.barTakings) || 0;
+    const crew = Number(e.crewCount) || 0;
+    lines.push([`Commission (${fmtGBP(bar)} bar takings${crew ? `, ÷ ${crew} crew` : ' — crew not set'})`, pay.commission]);
+  } else if (e.type === 'standby') {
+    lines.push(['Standby pay', pay.standbyPay]);
+  } else {
+    lines.push([e.otherDesc || 'Other pay', pay.otherPay]);
+  }
+  if (e.dayOffType !== 'none') {
+    lines.push([e.dayOffType === 'ddo' ? 'DDO pay' : 'IDO pay', pay.dayOffPay]);
+  }
+  const dm = Number(e.delayMinutes) || 0;
+  if (dm > 0) {
+    lines.push([`Delay ${fmtMins(dm)} (${pay.delayStatus === 'paid' ? 'paid' : 'unpaid'})`, pay.delayPay]);
+  }
+  return lines;
+}
+
 function renderEntries() {
   document.getElementById('entriesMonthLabel').textContent = entriesViewMonth;
   const list = entries.filter(e => monthKey(e.date) === entriesViewMonth).sort((a, b) => b.date.localeCompare(a.date));
@@ -613,20 +639,38 @@ function renderEntries() {
       tags.push(pay.delayStatus === 'paid' ? `<span class="tag ok">Delay ${fmtMins(e.delayMinutes)} paid</span>` : `<span class="tag warn">Delay ${fmtMins(e.delayMinutes)} unpaid</span>`);
     }
     if (e.willingToFly) tags.push('<span class="tag">Willing to fly</span>');
-    return `<div class="entry-item">
-      <div>
-        <div class="route">${title}</div>
-        <div class="meta">${e.date} · ${sub}</div>
-        <div class="tags">${tags.join('')}</div>
-      </div>
-      <div>
-        <div class="amount">${fmtGBP(pay.total)}</div>
-        <button class="icon-btn" data-del="${e.id}">✕</button>
+
+    const breakdown = entryBreakdownLines(e, pay)
+      .map(([label, amount]) => `<div class="line"><span>${label}</span><span>${fmtGBP(amount)}</span></div>`)
+      .join('');
+    const notesLine = e.notes ? `<div class="helptext" style="margin-top:6px;">${e.notes}</div>` : '';
+
+    return `<div class="entry-item entry-item-expandable" data-id="${e.id}">
+      <button type="button" class="entry-item-head">
+        <div>
+          <div class="route">${title}</div>
+          <div class="meta">${e.date} · ${sub}</div>
+          <div class="tags">${tags.join('')}</div>
+        </div>
+        <div>
+          <div class="amount">${fmtGBP(pay.total)}</div>
+          <span class="entry-item-chevron">▾</span>
+        </div>
+      </button>
+      <div class="entry-item-body">
+        ${breakdown}
+        <div class="line total"><span>Total</span><span>${fmtGBP(pay.total)}</span></div>
+        ${notesLine}
+        <button class="icon-btn" data-del="${e.id}">✕ Delete entry</button>
       </div>
     </div>`;
   }).join('');
+  container.querySelectorAll('.entry-item-head').forEach(head => {
+    head.addEventListener('click', () => head.closest('.entry-item-expandable').classList.toggle('expanded'));
+  });
   container.querySelectorAll('[data-del]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
       if (!confirm('Delete this entry?')) return;
       entries = entries.filter(e => e.id !== btn.dataset.del);
       saveEntries(entries);
