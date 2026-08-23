@@ -1,6 +1,6 @@
 // bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
 // obvious from the app itself whether a device has picked up the latest update
-const APP_VERSION = 'v10';
+const APP_VERSION = 'v11';
 document.getElementById('appVersion').textContent = APP_VERSION;
 
 // ---------- Storage ----------
@@ -44,16 +44,22 @@ function defaultSettings() {
   };
 }
 
+// backfills anything missing/malformed in a settings object with safe defaults - used both
+// for settings freshly parsed from localStorage and for settings pulled down from another
+// device via sync, so a blank or partial document from either source can't zero out rates
+function sanitizeSettings(parsed) {
+  if (!parsed.payDeals || !parsed.payDeals.length) parsed.payDeals = [structuredClone(DEFAULT_DEAL)];
+  // re-key any previously-saved routes (some installs may predate the routeKey fix) and backfill new seed routes
+  parsed.routeCategories = Object.assign(structuredClone(NORMALIZED_SEED_ROUTES), normalizeRouteMap(parsed.routeCategories || {}));
+  if (typeof parsed.manualClaimRules !== 'string') parsed.manualClaimRules = '';
+  return parsed;
+}
+
 function loadSettings() {
   const raw = localStorage.getItem(SETTINGS_KEY);
   if (raw) {
     try {
-      const parsed = JSON.parse(raw);
-      if (!parsed.payDeals || !parsed.payDeals.length) parsed.payDeals = [structuredClone(DEFAULT_DEAL)];
-      // re-key any previously-saved routes (some installs may predate the routeKey fix) and backfill new seed routes
-      parsed.routeCategories = Object.assign(structuredClone(NORMALIZED_SEED_ROUTES), normalizeRouteMap(parsed.routeCategories || {}));
-      if (typeof parsed.manualClaimRules !== 'string') parsed.manualClaimRules = '';
-      return parsed;
+      return sanitizeSettings(JSON.parse(raw));
     } catch (e) { /* fall through */ }
   }
   // migrate from v1 flat-rate settings if present
@@ -110,8 +116,8 @@ window.__applyRemoteEntries = (list) => {
   refreshActiveView();
 };
 window.__applyRemoteSettings = (s) => {
-  settings = s;
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  settings = sanitizeSettings(s || {});
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   refreshActiveView();
 };
 
@@ -1097,18 +1103,46 @@ function fillSettingsForm() {
   document.getElementById('manualClaimRules').value = settings.manualClaimRules || '';
 
   const routeList = document.getElementById('routeManagerList');
-  const cats = ['nominal', 'short', 'medium', 'long', 'extraLong', 'ultraLong'];
   const routes = Object.entries(settings.routeCategories).sort((a, b) => a[0].localeCompare(b[0]));
   document.getElementById('routeCountLabel').textContent = `${routes.length} routes`;
   routeList.innerHTML = routes.map(([route, cat]) => `
     <div class="route-manager-item">
       <span>${displayRoute(route)}</span>
-      <select data-route="${route}">${cats.map(c => `<option value="${c}" ${c === cat ? 'selected' : ''}>${categoryLabel(c)}</option>`).join('')}</select>
+      <select data-route="${route}">${CATS.map(c => `<option value="${c}" ${c === cat ? 'selected' : ''}>${categoryLabel(c)}</option>`).join('')}</select>
+      <button class="icon-btn" data-route-del="${route}">✕</button>
     </div>`).join('');
   routeList.querySelectorAll('select').forEach(sel => {
     sel.addEventListener('change', () => { settings.routeCategories[sel.dataset.route] = sel.value; saveSettings(settings); });
   });
+  routeList.querySelectorAll('[data-route-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm(`Remove ${displayRoute(btn.dataset.routeDel)} from known routes?`)) return;
+      delete settings.routeCategories[btn.dataset.routeDel];
+      saveSettings(settings);
+      fillSettingsForm();
+    });
+  });
 }
+
+document.getElementById('addRouteBtn').addEventListener('click', () => {
+  const fromEl = document.getElementById('newRouteFrom');
+  const toEl = document.getElementById('newRouteTo');
+  const catEl = document.getElementById('newRouteCategory');
+  const errEl = document.getElementById('newRouteError');
+  const from = fromEl.value.trim().toUpperCase();
+  const to = toEl.value.trim().toUpperCase();
+  errEl.textContent = '';
+
+  if (from.length < 3 || to.length < 3) { errEl.textContent = 'Enter both airport codes.'; return; }
+  if (from === to) { errEl.textContent = 'From and to can\'t be the same airport.'; return; }
+
+  settings.routeCategories[routeKey(from, to)] = catEl.value;
+  saveSettings(settings);
+  fromEl.value = '';
+  toEl.value = '';
+  catEl.value = 'nominal';
+  fillSettingsForm();
+});
 
 document.getElementById('addPayDealBtn').addEventListener('click', () => {
   const latest = dealFor(new Date().toISOString().slice(0, 10));

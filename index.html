@@ -246,7 +246,30 @@
     <div class="card">
       <h2><span class="dot"></span>Known routes <span id="routeCountLabel" style="margin-left:auto;font-family:var(--mono);font-weight:400;text-transform:none;letter-spacing:0;"></span></h2>
       <div class="banner">Seeded from your MAN base sector length map. Auto-read from a photo of the chart, so worth a skim, especially anything that looks off. Tap a dropdown to fix it in a couple of seconds.</div>
-      <div id="routeManagerList"></div>
+
+      <div class="row">
+        <div>
+          <label for="newRouteFrom">From</label>
+          <input type="text" id="newRouteFrom" placeholder="MAN" maxlength="4" style="text-transform:uppercase">
+        </div>
+        <div>
+          <label for="newRouteTo">To</label>
+          <input type="text" id="newRouteTo" placeholder="CDG" maxlength="4" style="text-transform:uppercase">
+        </div>
+      </div>
+      <label for="newRouteCategory">Sector length</label>
+      <select id="newRouteCategory">
+        <option value="nominal">Nominal</option>
+        <option value="short">Short</option>
+        <option value="medium">Medium</option>
+        <option value="long">Long</option>
+        <option value="extraLong">Extra Long</option>
+        <option value="ultraLong">Ultra Long</option>
+      </select>
+      <div id="newRouteError" class="auth-error"></div>
+      <button class="ghost" id="addRouteBtn">+ Add route</button>
+
+      <div id="routeManagerList" style="margin-top:14px;"></div>
     </div>
 
     <div class="card">
