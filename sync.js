@@ -33,25 +33,25 @@ const db = initializeFirestore(app, {
 });
 
 let currentUser = null;
-let syncedEntryIds = new Set();
+// id -> JSON-serialized entry, as last known to be in Firestore. Entries are now editable
+// in place (not just created/deleted), so a plain set of ids isn't enough to detect a
+// change - this also catches "same id, different content" and re-writes it.
+let syncedEntries = new Map();
 let unsubEntries = null;
 let unsubSettings = null;
 
-// entries are only ever created or deleted in this app, never edited in place, so syncing
-// just needs to diff ids against what we last knew was in Firestore - add what's new,
-// delete what dropped out. No per-field merge logic needed.
 window.__syncEntries = async (list) => {
   if (!currentUser) return;
   const entriesCol = collection(db, 'users', currentUser.uid, 'entries');
   const currentIds = new Set(list.map((e) => e.id));
-  const toAdd = list.filter((e) => !syncedEntryIds.has(e.id));
-  const toRemove = [...syncedEntryIds].filter((id) => !currentIds.has(id));
+  const toWrite = list.filter((e) => syncedEntries.get(e.id) !== JSON.stringify(e));
+  const toRemove = [...syncedEntries.keys()].filter((id) => !currentIds.has(id));
   try {
     await Promise.all([
-      ...toAdd.map((e) => setDoc(doc(entriesCol, e.id), e)),
+      ...toWrite.map((e) => setDoc(doc(entriesCol, e.id), e)),
       ...toRemove.map((id) => deleteDoc(doc(entriesCol, id)))
     ]);
-    syncedEntryIds = currentIds;
+    syncedEntries = new Map(list.map((e) => [e.id, JSON.stringify(e)]));
   } catch (e) {
     console.warn('sync: could not push entries', e);
   }
@@ -82,7 +82,7 @@ async function mergeAndSubscribe(user) {
   await Promise.all(localOnly.map((e) => setDoc(doc(entriesCol, e.id), e)));
 
   const merged = [...remoteEntries, ...localOnly];
-  syncedEntryIds = new Set(merged.map((e) => e.id));
+  syncedEntries = new Map(merged.map((e) => [e.id, JSON.stringify(e)]));
   window.__applyRemoteEntries(merged);
 
   if (settingsSnap.exists()) {
@@ -94,7 +94,7 @@ async function mergeAndSubscribe(user) {
   // live updates so other signed-in devices reflect changes without a manual refresh
   unsubEntries = onSnapshot(entriesCol, (snap) => {
     const list = snap.docs.map((d) => d.data());
-    syncedEntryIds = new Set(list.map((e) => e.id));
+    syncedEntries = new Map(list.map((e) => [e.id, JSON.stringify(e)]));
     window.__applyRemoteEntries(list);
   });
   unsubSettings = onSnapshot(settingsDocRef, (snap) => {
@@ -106,7 +106,7 @@ function teardownSync() {
   if (unsubEntries) { unsubEntries(); unsubEntries = null; }
   if (unsubSettings) { unsubSettings(); unsubSettings = null; }
   currentUser = null;
-  syncedEntryIds = new Set();
+  syncedEntries = new Map();
 }
 
 // ---------- Auth screen wiring ----------
