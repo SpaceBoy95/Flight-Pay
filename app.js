@@ -1,6 +1,6 @@
 // bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
 // obvious from the app itself whether a device has picked up the latest update
-const APP_VERSION = 'v16';
+const APP_VERSION = 'v17';
 document.getElementById('appVersion').textContent = APP_VERSION;
 
 // ---------- Storage ----------
@@ -205,7 +205,9 @@ function computeEntryPay(e) {
       const bar = Number(e.barTakings) || 0;
       const comp = Math.min(Number(e.compTakings) || 0, bar);
       const regularBar = bar - comp;
-      out.commission = ((regularBar * (deal.commissionPercent / 100)) + (comp * (deal.compCommissionPercent / 100))) / crew;
+      out.commissionBar = (regularBar * (deal.commissionPercent / 100)) / crew;
+      out.commissionComp = (comp * (deal.compCommissionPercent / 100)) / crew;
+      out.commission = out.commissionBar + out.commissionComp;
     }
   } else if (e.type === 'standby') {
     out.standbyPay = Number(e.standbyPay) || 0;
@@ -539,7 +541,12 @@ function updateComputedStrip() {
     if (draft.type === 'sector') {
       const label = draft.diverted ? `Diverted${draft.divertedTo ? ' to ' + draft.divertedTo : ''} — manual` : (draft.returnToStand ? 'Nominal — return to stand' : (categoryLabel(draft.category) || '—'));
       lines += `<div class="line"><span>Sector ${i + 1} pay (${label})</span><span>${fmtGBP(pay.sectorPay)}</span></div>`;
-      lines += `<div class="line"><span>Sector ${i + 1} commission</span><span>${fmtGBP(pay.commission)}</span></div>`;
+      if (pay.commissionComp) {
+        lines += `<div class="line"><span>Sector ${i + 1} commission</span><span>${fmtGBP(pay.commissionBar)}</span></div>`;
+        lines += `<div class="line"><span>Sector ${i + 1} comp commission</span><span>${fmtGBP(pay.commissionComp)}</span></div>`;
+      } else {
+        lines += `<div class="line"><span>Sector ${i + 1} commission</span><span>${fmtGBP(pay.commission)}</span></div>`;
+      }
     } else if (draft.type === 'standby') {
       lines += `<div class="line"><span>Standby pay</span><span>${fmtGBP(pay.standbyPay)}</span></div>`;
     } else {
@@ -704,15 +711,18 @@ function entryBreakdownLines(e, pay) {
     const bar = Number(e.barTakings) || 0;
     const crew = Number(e.crewCount) || 0;
     const comp = Math.min(Number(e.compTakings) || 0, bar);
-    let commissionLabel;
+    const crewSuffix = crew ? `, ÷ ${crew} crew` : ' — crew not set';
     if (e.payslipCommission != null) {
-      commissionLabel = `Commission (from payslip, crew-wide bar ${fmtGBP(bar)}${crew ? ` ÷ ${crew} crew` : ''})`;
+      // the payslip only gives one combined commission figure for the duty - no split to show
+      lines.push([`Commission (from payslip, crew-wide bar ${fmtGBP(bar)}${crew ? ` ÷ ${crew} crew` : ''})`, pay.commission]);
     } else if (comp > 0) {
-      commissionLabel = `Commission (${fmtGBP(bar - comp)} bar + ${fmtGBP(comp)} comp${crew ? `, ÷ ${crew} crew` : ' — crew not set'})`;
+      // shown as two separate lines (rather than one combined figure) since the payslip
+      // itself lists bar and comp commission separately, at different rates
+      lines.push([`Commission (${fmtGBP(bar - comp)} bar${crewSuffix})`, pay.commissionBar]);
+      lines.push([`Comp commission (${fmtGBP(comp)} comp${crewSuffix})`, pay.commissionComp]);
     } else {
-      commissionLabel = `Commission (${fmtGBP(bar)} bar takings${crew ? `, ÷ ${crew} crew` : ' — crew not set'})`;
+      lines.push([`Commission (${fmtGBP(bar)} bar takings${crewSuffix})`, pay.commission]);
     }
-    lines.push([commissionLabel, pay.commission]);
   } else if (e.type === 'standby') {
     lines.push(['Standby pay', pay.standbyPay]);
   } else {
