@@ -1,6 +1,6 @@
 // bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
 // obvious from the app itself whether a device has picked up the latest update
-const APP_VERSION = 'v17';
+const APP_VERSION = 'v18';
 document.getElementById('appVersion').textContent = APP_VERSION;
 
 // ---------- Storage ----------
