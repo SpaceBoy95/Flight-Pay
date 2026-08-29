@@ -1,6 +1,6 @@
 // bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
 // obvious from the app itself whether a device has picked up the latest update
-const APP_VERSION = 'v14';
+const APP_VERSION = 'v15';
 document.getElementById('appVersion').textContent = APP_VERSION;
 
 // ---------- Storage ----------
@@ -15,6 +15,7 @@ const DEFAULT_DEAL = {
   effectiveFrom: '2000-01-01',
   rates: { nominal: 21.56, short: 17.25, medium: 25.87, long: 32.34, extraLong: 53.90, ultraLong: 64.68 },
   commissionPercent: 10,
+  compCommissionPercent: 5,
   delayTier1: 15,
   delayTier2: 30,
   ddoAmount: 109.52,
@@ -49,6 +50,8 @@ function defaultSettings() {
 // device via sync, so a blank or partial document from either source can't zero out rates
 function sanitizeSettings(parsed) {
   if (!parsed.payDeals || !parsed.payDeals.length) parsed.payDeals = [structuredClone(DEFAULT_DEAL)];
+  // deals saved before comp commission existed won't have it - default to the standard rate
+  parsed.payDeals.forEach(d => { if (d.compCommissionPercent == null) d.compCommissionPercent = DEFAULT_DEAL.compCommissionPercent; });
   // re-key any previously-saved routes (some installs may predate the routeKey fix) and backfill new seed routes
   parsed.routeCategories = Object.assign(structuredClone(NORMALIZED_SEED_ROUTES), normalizeRouteMap(parsed.routeCategories || {}));
   if (typeof parsed.manualClaimRules !== 'string') parsed.manualClaimRules = '';
@@ -195,9 +198,14 @@ function computeEntryPay(e) {
       // precedence over working it out from bar takings - already the crew's actual share
       out.commission = Number(e.payslipCommission) || 0;
     } else {
+      // comp (complimentary bar service) sales earn a lower commission rate - that portion
+      // is carved out of bar takings rather than added on top, since it's already included
+      // in what got rung through the till
       const crew = Number(e.crewCount) || 1;
       const bar = Number(e.barTakings) || 0;
-      out.commission = (bar * (deal.commissionPercent / 100)) / crew;
+      const comp = Math.min(Number(e.compTakings) || 0, bar);
+      const regularBar = bar - comp;
+      out.commission = ((regularBar * (deal.commissionPercent / 100)) + (comp * (deal.compCommissionPercent / 100))) / crew;
     }
   } else if (e.type === 'standby') {
     out.standbyPay = Number(e.standbyPay) || 0;
@@ -245,10 +253,12 @@ function refreshActiveView() {
 const entryTypeSeg = document.getElementById('entryTypeSeg');
 let currentEntryType = 'sector';
 let sectorCount = 1;
+let editingEntryId = null; // set while the Log form is editing an existing entry rather than creating a new one
 
 entryTypeSeg.addEventListener('click', (ev) => {
   const btn = ev.target.closest('button');
   if (!btn) return;
+  if (editingEntryId) cancelEdit(); // switching type mid-edit doesn't make sense - bail out to a clean form
   currentEntryType = btn.dataset.val;
   [...entryTypeSeg.children].forEach(b => b.classList.toggle('active', b === btn));
   document.getElementById('sectorFields').style.display = currentEntryType === 'sector' ? 'block' : 'none';
@@ -328,6 +338,10 @@ function sectorBlockTemplate(i) {
       <label>Bar takings this sector (£)</label>
       <input type="number" class="sb-bar" inputmode="decimal" step="0.01" placeholder="0.00">
 
+      <label>Of which, comp takings (£)</label>
+      <input type="number" class="sb-comp" inputmode="decimal" step="0.01" placeholder="0.00">
+      <div class="helptext">Comp (complimentary) sales earn a lower commission rate - enter the portion of the bar takings above that was comp, and it'll be split out automatically.</div>
+
       <label>Crew operating</label>
       <input type="number" class="sb-crew" inputmode="numeric" min="1" placeholder="4">
       <div class="helptext">Commission is split evenly across this many crew — e.g. £4,000 bar takings at 10% with 4 crew is £100 each.</div>
@@ -367,6 +381,7 @@ function captureSectorBlockValues() {
     divertedTo: block.querySelector('.sb-diverted-to')?.value || '',
     manualPay: block.querySelector('.sb-manual-pay')?.value || '',
     barTakings: block.querySelector('.sb-bar').value,
+    compTakings: block.querySelector('.sb-comp').value,
     crewCount: block.querySelector('.sb-crew').value
   }));
 }
@@ -387,6 +402,7 @@ function applySectorBlockValues(values) {
     const manualPayInput = block.querySelector('.sb-manual-pay');
     if (manualPayInput) manualPayInput.value = v.manualPay || '';
     block.querySelector('.sb-bar').value = v.barTakings || '';
+    block.querySelector('.sb-comp').value = v.compTakings || '';
     block.querySelector('.sb-crew').value = v.crewCount || '';
 
     const note = block.querySelector('.sb-route-note');
@@ -430,6 +446,7 @@ function renderSectorBlocks(preserveExisting = true) {
     catSel.addEventListener('change', updateComputedStrip);
     returnChk.addEventListener('change', updateComputedStrip);
     block.querySelector('.sb-bar').addEventListener('input', updateComputedStrip);
+    block.querySelector('.sb-comp').addEventListener('input', updateComputedStrip);
     block.querySelector('.sb-crew').addEventListener('input', updateComputedStrip);
     divertChk.addEventListener('change', () => {
       manualWrap.style.display = divertChk.checked ? 'block' : 'none';
@@ -467,6 +484,7 @@ function readSectorBlocks() {
     manualPay: block.querySelector('.sb-manual-pay')?.value || 0,
     divertedTo: (block.querySelector('.sb-diverted-to')?.value || '').trim().toUpperCase(),
     barTakings: block.querySelector('.sb-bar').value,
+    compTakings: block.querySelector('.sb-comp').value,
     crewCount: block.querySelector('.sb-crew').value
   }));
 }
@@ -483,7 +501,7 @@ function buildDraftEntries() {
       type: 'sector',
       date, origin: b.origin, dest: b.dest, category: b.category,
       returnToStand: b.returnToStand, diverted: b.diverted, manualPay: b.manualPay, divertedTo: b.divertedTo,
-      barTakings: b.barTakings, crewCount: b.crewCount,
+      barTakings: b.barTakings, compTakings: b.compTakings, crewCount: b.crewCount,
       // delay / day-off apply once per duty, only attached to the first sector to avoid double-counting
       dayOffType: i === 0 ? currentDayOff : 'none',
       delayMinutes: i === 0 ? delayMinutes : 0,
@@ -542,6 +560,74 @@ function updateComputedStrip() {
   if (sbContainer) applySectorAccordionState(sbContainer);
 }
 
+// clean wipe back to a fresh "new entry" form - shared by the normal post-save reset and cancel-edit
+function resetLogForm() {
+  editingEntryId = null;
+  document.getElementById('editBanner').style.display = 'none';
+  document.getElementById('saveEntryBtn').textContent = 'Save entry';
+  sectorCount = 1;
+  expandedSectorIdx = 0;
+  [...sectorCountSeg.children].forEach((b, i) => b.classList.toggle('active', i === 0));
+  renderSectorBlocks(false);
+  document.getElementById('entryDelay').value = '';
+  document.getElementById('entryWillingToFly').checked = false;
+  document.getElementById('entryNotes').value = '';
+  document.getElementById('standbyMinutes').value = '';
+  document.getElementById('standbyPay').value = '';
+  document.getElementById('otherDesc').value = '';
+  document.getElementById('otherPay').value = '';
+  currentDayOff = 'none';
+  [...dayOffSeg.children].forEach((b, i) => b.classList.toggle('active', i === 0));
+  document.getElementById('entryDate').value = new Date().toISOString().slice(0, 10);
+}
+
+function cancelEdit() {
+  resetLogForm();
+}
+document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
+
+// loads an existing entry into the Log form for editing, in place of creating a new one -
+// always treated as a single-leg edit (sectorCount 1) since every logged leg, even ones
+// from a multi-sector duty, is already its own independent entry
+function startEditEntry(entry) {
+  editingEntryId = entry.id;
+  currentEntryType = entry.type;
+  [...entryTypeSeg.children].forEach(b => b.classList.toggle('active', b.dataset.val === entry.type));
+  document.getElementById('sectorFields').style.display = entry.type === 'sector' ? 'block' : 'none';
+  document.getElementById('standbyFields').style.display = entry.type === 'standby' ? 'block' : 'none';
+  document.getElementById('otherFields').style.display = entry.type === 'other' ? 'block' : 'none';
+
+  document.getElementById('entryDate').value = entry.date || '';
+  document.getElementById('entryDelay').value = entry.delayMinutes || '';
+  document.getElementById('entryWillingToFly').checked = !!entry.willingToFly;
+  document.getElementById('entryNotes').value = entry.notes || '';
+  currentDayOff = entry.dayOffType || 'none';
+  [...dayOffSeg.children].forEach(b => b.classList.toggle('active', b.dataset.val === currentDayOff));
+
+  if (entry.type === 'sector') {
+    sectorCount = 1;
+    [...sectorCountSeg.children].forEach((b, i) => b.classList.toggle('active', i === 0));
+    expandedSectorIdx = 0;
+    renderSectorBlocks(false);
+    applySectorBlockValues([{
+      origin: entry.origin, dest: entry.dest, category: entry.category,
+      returnToStand: entry.returnToStand, diverted: entry.diverted, divertedTo: entry.divertedTo,
+      manualPay: entry.manualPay, barTakings: entry.barTakings, compTakings: entry.compTakings, crewCount: entry.crewCount
+    }]);
+  } else if (entry.type === 'standby') {
+    document.getElementById('standbyMinutes').value = entry.standbyMinutes || '';
+    document.getElementById('standbyPay').value = entry.standbyPay || '';
+  } else {
+    document.getElementById('otherDesc').value = entry.otherDesc || '';
+    document.getElementById('otherPay').value = entry.otherPay || '';
+  }
+
+  document.getElementById('editBanner').style.display = 'block';
+  document.getElementById('saveEntryBtn').textContent = 'Save changes';
+  updateComputedStrip();
+  showView('log');
+}
+
 document.getElementById('saveEntryBtn').addEventListener('click', () => {
   const drafts = buildDraftEntries();
   if (!drafts[0].date) { alert('Add a date first.'); return; }
@@ -558,31 +644,32 @@ document.getElementById('saveEntryBtn').addEventListener('click', () => {
       const key = routeKey(d.origin, d.dest);
       settings.routeCategories[key] = d.category;
     }
-    d.id = Date.now() + '-' + Math.random().toString(36).slice(2, 7);
   });
   saveSettings(settings);
+
+  if (editingEntryId) {
+    // merge the edited fields over the original entry so anything the form doesn't cover
+    // (payslip-imported amounts, source tag, id) survives the edit untouched
+    const idx = entries.findIndex(e => e.id === editingEntryId);
+    if (idx === -1) { alert('That entry no longer exists — it may have been deleted on another device.'); resetLogForm(); return; }
+    entries[idx] = Object.assign({}, entries[idx], drafts[0], { id: editingEntryId });
+    saveEntries(entries);
+    resetLogForm();
+    const btn = document.getElementById('saveEntryBtn');
+    btn.textContent = 'Saved ✓';
+    setTimeout(() => { btn.textContent = 'Save entry'; }, 1400);
+    return;
+  }
+
+  drafts.forEach(d => { d.id = Date.now() + '-' + Math.random().toString(36).slice(2, 7); });
   entries.push(...drafts);
   saveEntries(entries);
 
-  // reset form (clean wipe - don't carry the just-saved sector values into the new entry)
-  sectorCount = 1;
-  expandedSectorIdx = 0;
-  [...sectorCountSeg.children].forEach((b, i) => b.classList.toggle('active', i === 0));
-  renderSectorBlocks(false);
-  document.getElementById('entryDelay').value = '';
-  document.getElementById('entryWillingToFly').checked = false;
-  document.getElementById('entryNotes').value = '';
-  document.getElementById('standbyMinutes').value = '';
-  document.getElementById('standbyPay').value = '';
-  document.getElementById('otherDesc').value = '';
-  document.getElementById('otherPay').value = '';
-  currentDayOff = 'none';
-  [...dayOffSeg.children].forEach((b, i) => b.classList.toggle('active', i === 0));
-
+  const savedCount = drafts.length;
+  resetLogForm();
   const btn = document.getElementById('saveEntryBtn');
-  const original = btn.textContent;
-  btn.textContent = drafts.length > 1 ? `Saved ${drafts.length} sectors ✓` : 'Saved ✓';
-  setTimeout(() => { btn.textContent = original; }, 1400);
+  btn.textContent = savedCount > 1 ? `Saved ${savedCount} sectors ✓` : 'Saved ✓';
+  setTimeout(() => { btn.textContent = 'Save entry'; }, 1400);
 });
 
 document.getElementById('entryDate').value = new Date().toISOString().slice(0, 10);
@@ -613,9 +700,15 @@ function entryBreakdownLines(e, pay) {
     lines.push([label, pay.sectorPay]);
     const bar = Number(e.barTakings) || 0;
     const crew = Number(e.crewCount) || 0;
-    const commissionLabel = e.payslipCommission != null
-      ? `Commission (from payslip, crew-wide bar ${fmtGBP(bar)}${crew ? ` ÷ ${crew} crew` : ''})`
-      : `Commission (${fmtGBP(bar)} bar takings${crew ? `, ÷ ${crew} crew` : ' — crew not set'})`;
+    const comp = Math.min(Number(e.compTakings) || 0, bar);
+    let commissionLabel;
+    if (e.payslipCommission != null) {
+      commissionLabel = `Commission (from payslip, crew-wide bar ${fmtGBP(bar)}${crew ? ` ÷ ${crew} crew` : ''})`;
+    } else if (comp > 0) {
+      commissionLabel = `Commission (${fmtGBP(bar - comp)} bar + ${fmtGBP(comp)} comp${crew ? `, ÷ ${crew} crew` : ' — crew not set'})`;
+    } else {
+      commissionLabel = `Commission (${fmtGBP(bar)} bar takings${crew ? `, ÷ ${crew} crew` : ' — crew not set'})`;
+    }
     lines.push([commissionLabel, pay.commission]);
   } else if (e.type === 'standby') {
     lines.push(['Standby pay', pay.standbyPay]);
@@ -676,12 +769,22 @@ function renderEntries() {
         ${breakdown}
         <div class="line total"><span>Total</span><span>${fmtGBP(pay.total)}</span></div>
         ${notesLine}
-        <button class="icon-btn" data-del="${e.id}">✕ Delete entry</button>
+        <div class="row" style="margin-top:10px;">
+          <button class="ghost" data-edit="${e.id}">✎ Edit</button>
+          <button class="icon-btn" data-del="${e.id}">✕ Delete entry</button>
+        </div>
       </div>
     </div>`;
   }).join('');
   container.querySelectorAll('.entry-item-head').forEach(head => {
     head.addEventListener('click', () => head.closest('.entry-item-expandable').classList.toggle('expanded'));
+  });
+  container.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const entry = entries.find(e => e.id === btn.dataset.edit);
+      if (entry) startEditEntry(entry);
+    });
   });
   container.querySelectorAll('[data-del]').forEach(btn => {
     btn.addEventListener('click', (ev) => {
@@ -1108,6 +1211,11 @@ function renderStats() {
   const totalEarned = scoped.reduce((s, e) => s + computeEntryPay(e).total, 0);
   const totalBar = sectorEntries.reduce((s, e) => s + (Number(e.barTakings) || 0), 0);
   const largestBar = sectorEntries.reduce((max, e) => Math.max(max, Number(e.barTakings) || 0), 0);
+  // everything that isn't bar-driven sector pay/commission - delay, day-off, standby, other pay
+  const totalOtherPay = scoped.reduce((s, e) => {
+    const p = computeEntryPay(e);
+    return s + p.delayPay + p.dayOffPay + p.standbyPay + p.otherPay;
+  }, 0);
   const willingCount = scoped.filter(e => e.willingToFly).length;
   const delayedEntries = scoped.filter(e => Number(e.delayMinutes) > 0);
   let unpaidMin = 0, paidMin = 0;
@@ -1116,6 +1224,7 @@ function renderStats() {
   const stats = [
     ['Total logged pay', fmtGBP(totalEarned), `${scoped.length} entries`],
     ['Total bar takings', fmtGBP(totalBar), `${sectorEntries.length} sectors`],
+    ['Disruption & other pay', fmtGBP(totalOtherPay), 'delay, day off, standby, other'],
     ['Largest single bar', fmtGBP(largestBar), ''],
     ['Willing to fly', willingCount, 'times logged'],
     ['Sectors delayed', delayedEntries.length, ''],
@@ -1196,7 +1305,9 @@ function fillSettingsForm() {
       <div class="row"><div><label>Extra Long</label><input type="number" step="0.01" class="pd-extraLong" value="${d.rates.extraLong}"></div>
       <div><label>Ultra Long</label><input type="number" step="0.01" class="pd-ultraLong" value="${d.rates.ultraLong}"></div></div>
       <div class="row"><div><label>Commission %</label><input type="number" step="0.1" class="pd-commission" value="${d.commissionPercent}"></div>
-      <div><label>DDO £</label><input type="number" step="0.01" class="pd-ddo" value="${d.ddoAmount}"></div></div>
+      <div><label>Comp commission %</label><input type="number" step="0.1" class="pd-comp-commission" value="${d.compCommissionPercent}"></div></div>
+      <div class="row"><div><label>DDO £</label><input type="number" step="0.01" class="pd-ddo" value="${d.ddoAmount}"></div>
+      <div></div></div>
       <div class="row"><div><label>IDO £</label><input type="number" step="0.01" class="pd-ido" value="${d.idoAmount || ''}" placeholder="Not confirmed"></div>
       <div></div></div>
       <div class="row"><div><label>Delay 1hr+ £</label><input type="number" step="0.01" class="pd-tier1" value="${d.delayTier1}"></div>
@@ -1280,6 +1391,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', () => {
     deal.rates.extraLong = Number(card.querySelector('.pd-extraLong').value) || 0;
     deal.rates.ultraLong = Number(card.querySelector('.pd-ultraLong').value) || 0;
     deal.commissionPercent = Number(card.querySelector('.pd-commission').value) || 0;
+    deal.compCommissionPercent = Number(card.querySelector('.pd-comp-commission').value) || 0;
     deal.ddoAmount = Number(card.querySelector('.pd-ddo').value) || 0;
     const idoVal = card.querySelector('.pd-ido').value;
     deal.idoAmount = idoVal ? Number(idoVal) : null;
