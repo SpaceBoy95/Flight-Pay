@@ -1,6 +1,6 @@
 // bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
 // obvious from the app itself whether a device has picked up the latest update
-const APP_VERSION = 'v15';
+const APP_VERSION = 'v16';
 document.getElementById('appVersion').textContent = APP_VERSION;
 
 // ---------- Storage ----------
@@ -502,11 +502,14 @@ function buildDraftEntries() {
       date, origin: b.origin, dest: b.dest, category: b.category,
       returnToStand: b.returnToStand, diverted: b.diverted, manualPay: b.manualPay, divertedTo: b.divertedTo,
       barTakings: b.barTakings, compTakings: b.compTakings, crewCount: b.crewCount,
-      // delay / day-off apply once per duty, only attached to the first sector to avoid double-counting
+      // delay / day-off / willing-to-fly apply once per duty, only attached to the first
+      // sector, since counting them again per leg would double up pay or stats. Notes are
+      // just free text with no such double-counting risk, so every sector in the duty
+      // keeps a copy - editing any one leg still shows what was written for that day.
       dayOffType: i === 0 ? currentDayOff : 'none',
       delayMinutes: i === 0 ? delayMinutes : 0,
       willingToFly: i === 0 ? willingToFly : false,
-      notes: i === 0 ? notes : ''
+      notes
     }));
   } else if (currentEntryType === 'standby') {
     return [{
