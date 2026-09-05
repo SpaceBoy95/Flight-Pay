@@ -1,6 +1,6 @@
 // bump this alongside CACHE in sw.js on every deploy - shown in the topbar so it's
 // obvious from the app itself whether a device has picked up the latest update
-const APP_VERSION = 'v18';
+const APP_VERSION = 'v19';
 document.getElementById('appVersion').textContent = APP_VERSION;
 
 // ---------- Storage ----------
@@ -21,6 +21,26 @@ const DEFAULT_DEAL = {
   ddoAmount: 109.52,
   idoAmount: null
 };
+
+// distilled from the Cabin Crew RDP guide v5.3 (UK) - seeded into a user's Manual claim
+// rules note once, the first time it's still blank, so it doesn't overwrite anything
+// they've already written there themselves
+const MANUAL_CLAIM_DEFAULT_TEXT = `Automatic (no claim needed):
+- Any duty disrupted 60+ min from schedule (delay, cancellation, changed off-duty time), including positioning on an easyJet flight.
+- Positioning by another carrier/train/taxi - tell crewing the off-duty time needs amending, then it's automatic too.
+- Called out from standby and the flight you're given runs 60+ min later than its own schedule.
+
+Manual claim needed (Connected Portal > Workday > Requests > Actions > Create Request, within 30 days of the flight):
+- Report time changed before you operate, delaying you 60+ min, but you still land within 60 min of the original scheduled arrival.
+- Called out from standby and it results in an unscheduled night stop.
+- Put on airport duty then called out to fly, and your off-duty time changes 60+ min.
+- Stood down (STDN) more than 2 hours ahead of schedule.
+
+Not payable:
+- Under 60 min difference from schedule.
+- LATE, NSO, RCON, UNCT, DECL, RFSD or any other absence code on the day.
+- Operating into a day off - DDO/IDO pays instead, unless there's also an unscheduled night stop.
+- Delayed arriving out of base (only delays affecting your return/off-duty time count).`;
 
 const SEED_ROUTES = {"MAN-BES": "short", "MAN-BFS": "short", "MAN-BHD": "short", "MAN-BRU": "short", "MAN-CRL": "short", "MAN-DUS": "short", "MAN-EDI": "short", "MAN-GVA": "short", "MAN-INV": "short", "MAN-JER": "short", "MAN-LGW": "short", "MAN-LUX": "short", "MAN-NQY": "short", "MAN-NTE": "short", "MAN-ORY": "short", "MAN-RNS": "short", "MAN-ABZ": "short", "MAN-IOM": "short", "MAN-LDY": "short", "MAN-ORK": "short", "MAN-SNN": "short", "MAN-DUB": "short", "MAN-CDG": "short", "MAN-AMS": "short", "MAN-CGN": "short", "MAN-BOD": "medium", "MAN-OPO": "medium", "MAN-LCG": "medium", "MAN-BIO": "medium", "MAN-PMI": "medium", "MAN-GDN": "medium", "MAN-SZG": "medium", "MAN-LJU": "medium", "MAN-LIS": "medium", "MAN-JTR": "long", "MAN-PMO": "long", "MAN-TPS": "long", "MAN-RHO": "extraLong", "MAN-KGS": "extraLong", "MAN-BJV": "extraLong", "MAN-AYT": "extraLong", "MAN-AEY": "medium", "MAN-AJA": "medium", "MAN-ALC": "medium", "MAN-ARN": "medium", "MAN-BER": "medium", "MAN-BGO": "medium", "MAN-BGY": "medium", "MAN-BIA": "medium", "MAN-BLQ": "medium", "MAN-BSL": "medium", "MAN-BUD": "medium", "MAN-CAG": "medium", "MAN-CPH": "medium", "MAN-FAE": "medium", "MAN-FCO": "medium", "MAN-FRA": "medium", "MAN-GNB": "medium", "MAN-GOA": "medium", "MAN-GOT": "medium", "MAN-GRO": "medium", "MAN-GRX": "medium", "MAN-HAM": "medium", "MAN-HEL": "medium", "MAN-IBZ": "medium", "MAN-INN": "medium", "MAN-KEF": "medium", "MAN-KRK": "medium", "MAN-KSC": "medium", "MAN-LEI": "medium", "MAN-LIN": "medium", "MAN-LRH": "medium", "MAN-LWO": "medium", "MAN-LYS": "medium", "MAN-MAD": "medium", "MAN-MAH": "medium", "MAN-MRS": "medium", "MAN-MUC": "medium", "MAN-MXP": "medium", "MAN-NCE": "medium", "MAN-NUE": "medium", "MAN-OLB": "medium", "MAN-OSL": "medium", "MAN-POZ": "medium", "MAN-PRG": "medium", "MAN-PSA": "medium", "MAN-PUJ": "medium", "MAN-REU": "medium", "MAN-RIX": "medium", "MAN-RMU": "medium", "MAN-RZE": "medium", "MAN-SCR": "medium", "MAN-SPU": "medium", "MAN-SVG": "medium", "MAN-TLL": "medium", "MAN-TLS": "medium", "MAN-TRN": "medium", "MAN-TRS": "medium", "MAN-VCE": "medium", "MAN-VIE": "medium", "MAN-VLC": "medium", "MAN-VNO": "medium", "MAN-VRN": "medium", "MAN-WAW": "medium", "MAN-WRO": "medium", "MAN-ZAD": "medium", "MAN-ZAG": "medium", "MAN-ZRH": "medium", "MAN-AGA": "long", "MAN-AGP": "long", "MAN-ATH": "long", "MAN-BEG": "long", "MAN-BOJ": "long", "MAN-BRI": "long", "MAN-CFU": "long", "MAN-CLJ": "long", "MAN-CMN": "long", "MAN-CTA": "long", "MAN-DJE": "long", "MAN-EFL": "long", "MAN-ENF": "long", "MAN-FAO": "long", "MAN-FNC": "long", "MAN-GIB": "long", "MAN-IST": "long", "MAN-IVL": "long", "MAN-JMK": "long", "MAN-JSI": "long", "MAN-KBP": "long", "MAN-KLX": "long", "MAN-KRN": "long", "MAN-KVA": "long", "MAN-MJT": "long", "MAN-MLA": "long", "MAN-NAP": "long", "MAN-NBE": "long", "MAN-OHD": "long", "MAN-OTP": "long", "MAN-OUD": "long", "MAN-PDL": "long", "MAN-PRN": "long", "MAN-PVK": "long", "MAN-RAK": "long", "MAN-RBA": "long", "MAN-RVN": "long", "MAN-SKG": "long", "MAN-SOF": "long", "MAN-TIA": "long", "MAN-TOS": "long", "MAN-VAR": "long", "MAN-ACE": "extraLong", "MAN-ADB": "extraLong", "MAN-CHQ": "extraLong", "MAN-DLM": "extraLong", "MAN-ESB": "extraLong", "MAN-LPA": "extraLong", "MAN-SPC": "extraLong", "MAN-TFS": "extraLong", "MAN-AQJ": "ultraLong", "MAN-ASM": "ultraLong", "MAN-BEY": "ultraLong", "MAN-BVC": "ultraLong", "MAN-EVN": "ultraLong", "MAN-GYD": "ultraLong", "MAN-HRG": "ultraLong", "MAN-LCA": "ultraLong", "MAN-LXR": "ultraLong", "MAN-PFO": "ultraLong", "MAN-SPX": "ultraLong", "MAN-TBS": "ultraLong", "MAN-TLV": "ultraLong", "MAN-VXE": "ultraLong"};
 
@@ -55,6 +75,12 @@ function sanitizeSettings(parsed) {
   // re-key any previously-saved routes (some installs may predate the routeKey fix) and backfill new seed routes
   parsed.routeCategories = Object.assign(structuredClone(NORMALIZED_SEED_ROUTES), normalizeRouteMap(parsed.routeCategories || {}));
   if (typeof parsed.manualClaimRules !== 'string') parsed.manualClaimRules = '';
+  // one-time seed with the RDP guide summary, only while the note is still untouched -
+  // never overwrites anything the user has actually written (or deliberately cleared) there
+  if (!parsed.manualClaimRules && !parsed.manualClaimRulesSeeded) {
+    parsed.manualClaimRules = MANUAL_CLAIM_DEFAULT_TEXT;
+  }
+  parsed.manualClaimRulesSeeded = true;
   return parsed;
 }
 
@@ -209,6 +235,12 @@ function computeEntryPay(e) {
       out.commissionComp = (comp * (deal.compCommissionPercent / 100)) / crew;
       out.commission = out.commissionBar + out.commissionComp;
     }
+    if (e.calledFromStandby) {
+      // the exact £ figure (once known from a payslip) always wins over the nominal-count
+      // guess made when logging the duty ahead of time
+      const manual = Number(e.standbyPay) || 0;
+      out.standbyPay = manual > 0 ? manual : (Number(e.standbyNominalCount) || 1) * (deal.rates.nominal || 0);
+    }
   } else if (e.type === 'standby') {
     out.standbyPay = Number(e.standbyPay) || 0;
   } else if (e.type === 'other') {
@@ -289,6 +321,26 @@ sectorCountSeg.addEventListener('click', (ev) => {
   expandedSectorIdx = sectorCount - 1; // reveal the newly-added sector, collapse the rest
   renderSectorBlocks();
 });
+
+// standby call-out - lets a sector duty that started life as an airport standby carry its
+// own standby pay too, since a sector entry and a standby entry used to be mutually
+// exclusive with no way to log "on standby, then called out to fly" as one thing
+const calledFromStandbyChk = document.getElementById('entryCalledFromStandby');
+const standbyCallOutFields = document.getElementById('standbyCallOutFields');
+let currentStandbyNominalCount = 1;
+calledFromStandbyChk.addEventListener('change', () => {
+  standbyCallOutFields.style.display = calledFromStandbyChk.checked ? 'block' : 'none';
+  updateComputedStrip();
+});
+const standbyNominalSeg = document.getElementById('standbyNominalSeg');
+standbyNominalSeg.addEventListener('click', (ev) => {
+  const btn = ev.target.closest('button');
+  if (!btn) return;
+  currentStandbyNominalCount = Number(btn.dataset.val);
+  [...standbyNominalSeg.children].forEach(b => b.classList.toggle('active', b === btn));
+  updateComputedStrip();
+});
+document.getElementById('standbyCallOutManualPay').addEventListener('input', updateComputedStrip);
 
 function sectorBlockTemplate(i) {
   return `
@@ -499,18 +551,25 @@ function buildDraftEntries() {
 
   if (currentEntryType === 'sector') {
     const blocks = readSectorBlocks();
+    const calledFromStandby = calledFromStandbyChk.checked;
+    const standbyNominalCount = currentStandbyNominalCount;
+    const standbyManualPay = document.getElementById('standbyCallOutManualPay').value;
     return blocks.map((b, i) => ({
       type: 'sector',
       date, origin: b.origin, dest: b.dest, category: b.category,
       returnToStand: b.returnToStand, diverted: b.diverted, manualPay: b.manualPay, divertedTo: b.divertedTo,
       barTakings: b.barTakings, compTakings: b.compTakings, crewCount: b.crewCount,
-      // delay / day-off / willing-to-fly apply once per duty, only attached to the first
-      // sector, since counting them again per leg would double up pay or stats. Notes are
-      // just free text with no such double-counting risk, so every sector in the duty
-      // keeps a copy - editing any one leg still shows what was written for that day.
+      // delay / day-off / willing-to-fly / standby call-out apply once per duty, only
+      // attached to the first sector, since counting them again per leg would double up pay
+      // or stats. Notes are just free text with no such double-counting risk, so every
+      // sector in the duty keeps a copy - editing any one leg still shows what was written
+      // for that day.
       dayOffType: i === 0 ? currentDayOff : 'none',
       delayMinutes: i === 0 ? delayMinutes : 0,
       willingToFly: i === 0 ? willingToFly : false,
+      calledFromStandby: i === 0 ? calledFromStandby : false,
+      standbyNominalCount: i === 0 ? standbyNominalCount : null,
+      standbyPay: i === 0 ? standbyManualPay : '',
       notes
     }));
   } else if (currentEntryType === 'standby') {
@@ -547,6 +606,10 @@ function updateComputedStrip() {
       } else {
         lines += `<div class="line"><span>Sector ${i + 1} commission</span><span>${fmtGBP(pay.commission)}</span></div>`;
       }
+      if (draft.calledFromStandby) {
+        const suffix = Number(draft.standbyPay) > 0 ? '' : ` (${draft.standbyNominalCount} nominal)`;
+        lines += `<div class="line"><span>Standby call-out pay${suffix}</span><span>${fmtGBP(pay.standbyPay)}</span></div>`;
+      }
     } else if (draft.type === 'standby') {
       lines += `<div class="line"><span>Standby pay</span><span>${fmtGBP(pay.standbyPay)}</span></div>`;
     } else {
@@ -582,6 +645,11 @@ function resetLogForm() {
   document.getElementById('entryDelay').value = '';
   document.getElementById('entryWillingToFly').checked = false;
   document.getElementById('entryNotes').value = '';
+  calledFromStandbyChk.checked = false;
+  standbyCallOutFields.style.display = 'none';
+  currentStandbyNominalCount = 1;
+  [...standbyNominalSeg.children].forEach((b, i) => b.classList.toggle('active', i === 0));
+  document.getElementById('standbyCallOutManualPay').value = '';
   document.getElementById('standbyMinutes').value = '';
   document.getElementById('standbyPay').value = '';
   document.getElementById('otherDesc').value = '';
@@ -614,6 +682,12 @@ function startEditEntry(entry) {
   currentDayOff = entry.dayOffType || 'none';
   [...dayOffSeg.children].forEach(b => b.classList.toggle('active', b.dataset.val === currentDayOff));
 
+  calledFromStandbyChk.checked = false;
+  standbyCallOutFields.style.display = 'none';
+  currentStandbyNominalCount = 1;
+  [...standbyNominalSeg.children].forEach((b, i) => b.classList.toggle('active', i === 0));
+  document.getElementById('standbyCallOutManualPay').value = '';
+
   if (entry.type === 'sector') {
     sectorCount = 1;
     [...sectorCountSeg.children].forEach((b, i) => b.classList.toggle('active', i === 0));
@@ -624,6 +698,11 @@ function startEditEntry(entry) {
       returnToStand: entry.returnToStand, diverted: entry.diverted, divertedTo: entry.divertedTo,
       manualPay: entry.manualPay, barTakings: entry.barTakings, compTakings: entry.compTakings, crewCount: entry.crewCount
     }]);
+    calledFromStandbyChk.checked = !!entry.calledFromStandby;
+    standbyCallOutFields.style.display = entry.calledFromStandby ? 'block' : 'none';
+    currentStandbyNominalCount = entry.standbyNominalCount || 1;
+    [...standbyNominalSeg.children].forEach(b => b.classList.toggle('active', Number(b.dataset.val) === currentStandbyNominalCount));
+    document.getElementById('standbyCallOutManualPay').value = entry.calledFromStandby ? (entry.standbyPay || '') : '';
   } else if (entry.type === 'standby') {
     document.getElementById('standbyMinutes').value = entry.standbyMinutes || '';
     document.getElementById('standbyPay').value = entry.standbyPay || '';
@@ -723,6 +802,10 @@ function entryBreakdownLines(e, pay) {
     } else {
       lines.push([`Commission (${fmtGBP(bar)} bar takings${crewSuffix})`, pay.commission]);
     }
+    if (e.calledFromStandby) {
+      const suffix = Number(e.standbyPay) > 0 ? '' : ` (${e.standbyNominalCount || 1} nominal)`;
+      lines.push([`Standby call-out pay${suffix}`, pay.standbyPay]);
+    }
   } else if (e.type === 'standby') {
     lines.push(['Standby pay', pay.standbyPay]);
   } else {
@@ -755,6 +838,7 @@ function renderEntries() {
     if (e.dayOffType === 'ddo') tags.push('<span class="tag">DDO</span>');
     if (e.dayOffType === 'ido') tags.push('<span class="tag">IDO</span>');
     if (e.diverted) tags.push('<span class="tag warn">Diverted</span>');
+    if (e.calledFromStandby) tags.push('<span class="tag">Standby call-out</span>');
     if (e.source === 'payslip-import') tags.push('<span class="tag">Imported</span>');
     if (Number(e.delayMinutes) > 0) {
       tags.push(pay.delayStatus === 'paid' ? `<span class="tag ok">Delay ${fmtMins(e.delayMinutes)} paid</span>` : `<span class="tag warn">Delay ${fmtMins(e.delayMinutes)} unpaid</span>`);

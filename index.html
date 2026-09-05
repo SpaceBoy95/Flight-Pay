@@ -70,6 +70,21 @@
         </div>
         <div class="helptext">Delay and day-off pay apply once per duty, so they're only counted against Sector 1.</div>
 
+        <div class="check-row">
+          <span>Called out from standby before this duty</span>
+          <label class="switch"><input type="checkbox" id="entryCalledFromStandby"><span class="track"></span><span class="thumb"></span></label>
+        </div>
+        <div id="standbyCallOutFields" style="display:none;">
+          <label>Nominal payments for the standby</label>
+          <div class="segmented" id="standbyNominalSeg">
+            <button data-val="1" class="active">1</button>
+            <button data-val="2">2</button>
+          </div>
+          <div class="helptext">Most call-outs earn 1 nominal payment. Only pick 2 if your roster/payslip shows two.</div>
+          <label for="standbyCallOutManualPay">Or enter the exact standby pay (£) if you know it - overrides the above</label>
+          <input type="number" id="standbyCallOutManualPay" inputmode="decimal" step="0.01" placeholder="0.00">
+        </div>
+
         <div id="sectorBlocksContainer"></div>
       </div>
 
